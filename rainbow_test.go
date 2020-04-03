@@ -59,6 +59,11 @@ func TestChainsBasic(t *testing.T) {
 		t.Fatal("lookup failed,  retrieving ", string(p), "instead of phzzoozt")
 	}
 
+	// verify ?
+	if bytes.Compare(r.H(p, []byte{}), h) != 0 {
+		t.Fatal("password returned did not match the requested hash")
+	}
+
 	hh := append([]byte{}, h...)
 	hh[0]++ // slight change should prevent retrieving the password ...
 	p, found = r.Lookup(hh)

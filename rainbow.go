@@ -63,7 +63,7 @@ func (r *Rainbow) NewChain() *Chain {
 	for i := 0; i < r.Cl; i++ {
 		p = r.R(i, c.End, p)
 		c.End = r.H(p, c.End)
-		fmt.Println(string(p), "-->", c.End)
+		//fmt.Println(string(p), "-->", c.End)
 	}
 	return c
 }
@@ -92,7 +92,7 @@ func (r *Rainbow) String() string {
 		"\n============================"
 
 	for i, c := range r.Chains {
-		s += fmt.Sprintf("\n%d\nStart:\t%v\nEnd : \t%v\n", i, c.Start, c.End)
+		s += fmt.Sprintf("\n%d\nStart:\t% X\nEnd : \t% X\n", i, c.Start, c.End)
 	}
 	return s + "\n"
 }
