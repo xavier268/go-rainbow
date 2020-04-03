@@ -8,8 +8,8 @@ import (
 	"testing"
 )
 
-func TestBasicRainbow(t *testing.T) {
-	r := getTestRainbow()
+func TestBasicRainbow10(t *testing.T) {
+	r := getTestRainbow(10)
 	c1 := r.NewChain()
 	c2 := r.NewChain()
 	if bytes.Compare(c1.Start, c2.Start) == 0 ||
@@ -22,8 +22,8 @@ func TestBasicRainbow(t *testing.T) {
 	}
 }
 
-func TestChainsBasic(t *testing.T) {
-	r := getTestRainbow()
+func TestChainsBasic10(t *testing.T) {
+	r := getTestRainbow(10)
 	for i := 0; i < 10; i++ {
 		c := r.NewChain()
 		r.AddChain(c)
@@ -73,13 +73,85 @@ func TestChainsBasic(t *testing.T) {
 
 }
 
+// ============================= benchmarks =============================
+func BenchmarkAddChain1_000(b *testing.B) {
+	r := getTestRainbow(1_000)
+	b.ResetTimer()
+	r.benchmarkAddChain(b)
+}
+func BenchmarkAddChain10_000(b *testing.B) {
+	r := getTestRainbow(10_000)
+	r.benchmarkAddChain(b)
+}
+
+func BenchmarkAddChain100_000(b *testing.B) {
+	r := getTestRainbow(100_000)
+	r.benchmarkAddChain(b)
+}
+func BenchmarkAddChain1_000_000(b *testing.B) {
+	r := getTestRainbow(1_000_000)
+	r.benchmarkAddChain(b)
+}
+
+func BenchmarkLookup2_000x5_000(b *testing.B) {
+	r := getTestRainbow(2_000)  // chain length
+	r.benchmarkLookup(5_000, b) // nb of chains
+}
+func BenchmarkLookup5_000x2_000(b *testing.B) {
+	r := getTestRainbow(5_000)  // chain length
+	r.benchmarkLookup(2_000, b) // nb of chains
+}
+func BenchmarkLookup500x20_000(b *testing.B) {
+	r := getTestRainbow(500)     // chain length
+	r.benchmarkLookup(20_000, b) // nb of chains
+}
+
+func BenchmarkLookup500x2_000(b *testing.B) {
+	r := getTestRainbow(500)    // chain length
+	r.benchmarkLookup(2_000, b) // nb of chains
+}
+
+func BenchmarkLookup500x200(b *testing.B) {
+	r := getTestRainbow(500)  // chain length
+	r.benchmarkLookup(200, b) // nb of chains
+}
+
+// run a benchmark, adding chains to the  Rainbow object.
+func (r *Rainbow) benchmarkAddChain(b *testing.B) {
+	b.ResetTimer()
+	for n := 0; n < b.N; n++ {
+		c := r.NewChain()
+		r.AddChain(c)
+	}
+}
+
+// run an (unsuccessfull) lookup on the Rainbow object
+func (r *Rainbow) benchmarkLookup(nbChains int, b *testing.B) {
+	var c *Chain
+	for i := 0; i < nbChains; i++ {
+		c = r.NewChain()
+		r.AddChain(c)
+	}
+	b.ResetTimer()
+	h := []byte{0, 1, 2, 3, 4, 5, 6, 7, 8, 9, 10}
+	var found bool
+	var p []byte
+	for n := 0; n < b.N; n++ {
+		p, found = r.Lookup(h)
+		if found {
+			b.Log("Found ", p, "-->", h)
+		}
+	}
+
+}
+
 // ============================= utilities ==============================
 
-func getTestRainbow() *Rainbow {
+func getTestRainbow(chainLength int) *Rainbow {
 	return &Rainbow{
 		H:     GetMD5Func(),
 		R:     GetAlphaReduceFunc(8),
-		Cl:    10,
+		Cl:    chainLength,
 		HSize: crypto.MD5.Size(),
 		Rand:  rand.New(rand.NewSource(42)),
 	}

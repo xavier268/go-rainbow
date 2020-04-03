@@ -30,5 +30,13 @@ func TestMD5(t *testing.T) {
 		t.Log("h4 h2", h4, h2)
 		t.Fatal("rewrite of slice did not happen as expected")
 	}
+}
 
+func BenchmarkHashFunctionMD5(b *testing.B) {
+	md := GetMD5Func()
+	h := make([]byte, 16, 16)
+	b.ResetTimer()
+	for i := 0; i < b.N; i++ {
+		h = md(h, h)
+	}
 }

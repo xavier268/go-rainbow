@@ -2,7 +2,7 @@ package rainbow
 
 // GetAlphaReduceFunc creates a ReduceFunc that generates
 // alphabetic loawercases passwords of the exact specified length.
-func GetAlphaReduceFunc(nbOfChar int) ReduceFunc {
+func GetAlphaReduceFunc(nbOfChar int) ReduceFunction {
 	if nbOfChar > 16 {
 		panic("GetAlphaReduceFunc only accepts up to 16 letters length passwords")
 	}

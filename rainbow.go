@@ -5,15 +5,16 @@ import (
 	"fmt"
 	"math/rand"
 	"sort"
+	"time"
 )
 
 // Rainbow is the main type to generate tables or lookup a password.
 type Rainbow struct {
 	// H is the Hash function used to compute from password to hash
-	H HashFunc
+	H HashFunction
 	// R is a reduce function, from hash to password
 	// It conforms to the hash.Hash interface.
-	R ReduceFunc
+	R ReduceFunction
 	// Cl is the chain length (constant)
 	Cl int
 	// HSize is the size of the HashFunction result in  bytes
@@ -26,24 +27,29 @@ type Rainbow struct {
 	sorted bool
 }
 
-// ReduceFunc is a function that reduces a hash
+// New constructs a new, empty rainbow table.
+func New(hf HashFunction, hsize int, rf ReduceFunction, chainLen int) *Rainbow {
+	r := new(Rainbow)
+	r.H = hf
+	r.HSize = hsize
+	r.R = rf
+	r.Cl = chainLen
+
+	r.Rand = rand.New(rand.NewSource(time.Now().UnixNano()))
+
+	return r
+}
+
+// ReduceFunction is a function that reduces a hash
 // into a password, the next in the chain.
 // The password value is returned as a byte slice.
 // No allocations are made.
-type ReduceFunc func(step int, hash []byte, password []byte) []byte
+type ReduceFunction func(step int, hash []byte, password []byte) []byte
 
-// HashFunc is a function that hashes a password into a hash
+// HashFunction is a function that hashes a password into a hash
 // hash is put into the provided hash slice, returning it.
 // No allcations are made.
-type HashFunc func(passwd []byte, hash []byte) []byte
-
-// NewRainbow constructor
-func NewRainbow(H HashFunc, R ReduceFunc, chlength int) *Rainbow {
-	r := new(Rainbow)
-	r.Cl = chlength
-	r.H, r.R = H, R
-	return r
-}
+type HashFunction func(passwd []byte, hash []byte) []byte
 
 // Chain in the table, contains the start and end hash values
 type Chain struct {
@@ -101,9 +107,9 @@ func (r *Rainbow) String() string {
 // if it exists. Found indicates if found.
 func (r *Rainbow) Lookup(h []byte) (p []byte, found bool) {
 
-	buf := make([]byte, r.HSize, r.HSize)
+	var buf []byte
 	for depth := 0; depth < r.Cl; depth++ {
-		buf = append(buf[:0], h...)
+		buf = append(buf[0:0], h...)
 
 		// compute the chain ending to look for ...
 		for i := r.Cl - depth; i < r.Cl; i++ {
@@ -130,7 +136,7 @@ func (r *Rainbow) Lookup(h []byte) (p []byte, found bool) {
 func (r *Rainbow) walkChain(c *Chain, h []byte) (p []byte, found bool) {
 	found = false
 	buf := append([]byte{}, c.Start...)
-	p = []byte{}
+	p = make([]byte, 0, r.HSize)
 	for i := 0; i < r.Cl; i++ {
 		p = r.R(i, buf, p)
 		buf = r.H(p, buf)

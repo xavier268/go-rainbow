@@ -42,3 +42,26 @@ func TestAlphaReduce(t *testing.T) {
 		t.Fatal("index does not have an influence on the output")
 	}
 }
+func BenchmarkAlphaReduce16(b *testing.B) {
+	benchmarkAlphaReduce(16, b)
+}
+func BenchmarkAlphaReduce8(b *testing.B) {
+	benchmarkAlphaReduce(8, b)
+}
+func BenchmarkAlphaReduce4(b *testing.B) {
+	benchmarkAlphaReduce(4, b)
+}
+func BenchmarkAlphaReduce2(b *testing.B) {
+	benchmarkAlphaReduce(2, b)
+}
+func BenchmarkAlphaReduce1(b *testing.B) {
+	benchmarkAlphaReduce(1, b)
+}
+func benchmarkAlphaReduce(nbChar int, b *testing.B) {
+	red := GetAlphaReduceFunc(nbChar)
+	h := make([]byte, 16, 16)
+	b.ResetTimer()
+	for i := 0; i < b.N; i++ {
+		h = red(i, h, h)
+	}
+}
