@@ -1,6 +1,8 @@
 package rainbow
 
 import (
+	"bytes"
+	"fmt"
 	"strings"
 	"testing"
 )
@@ -40,6 +42,57 @@ func TestAlphaReduce(t *testing.T) {
 	if strings.Compare(s, ss) == 0 {
 		t.Log(h, p, s, ss)
 		t.Fatal("index does not have an influence on the output")
+	}
+}
+
+func TestBaseReduce(t *testing.T) {
+	h := []byte{0, 1, 2, 3}
+	r := GetBaseReduceFunc()
+	var first, p []byte
+	first = r(8, h, p)
+	for step := 9; step < 100_000; step++ {
+		p = r(step, h, p)
+		if bytes.Compare(p, first) == 0 {
+			t.Fatal("unexpected BaseReduce collision at step ", step)
+		}
+	}
+}
+
+func TestStringReduce(t *testing.T) {
+	h := []byte{20, 1, 55, 3, 66}
+	p := []byte{}
+	r := GetStringReduceFunc(3, "Aéï", false)
+	results := make(map[string]int) // store test results
+	for step := 0; step < 50; step++ {
+		p = r(step, h, p)
+		results[string(p)]++
+	}
+	if len(results) != 16 {
+		fmt.Println(" number of distincts strings : ", len(results))
+		fmt.Println(results)
+		t.Fatal("unexpected results length (variable length)")
+	}
+
+	r = GetStringReduceFunc(3, "Aéï", true)
+	results = make(map[string]int) // store test results
+	for step := 0; step < 50; step++ {
+		p = r(step, h, p)
+		results[string(p)]++
+	}
+	if len(results) != 12 {
+		fmt.Println(" number of distincts strings : ", len(results))
+		fmt.Println(results)
+		t.Fatal("unexpected results length (fixed length)")
+	}
+}
+
+func BenchmarkBaseReduce(b *testing.B) {
+	h := []byte{0, 1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12, 13, 14, 15}
+	r := GetBaseReduceFunc()
+	var p []byte
+	b.ResetTimer()
+	for step := 0; step < b.N; step++ {
+		p = r(step, h, p)
 	}
 }
 func BenchmarkAlphaReduce16(b *testing.B) {

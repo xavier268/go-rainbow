@@ -28,9 +28,9 @@ func TestChainsBasic10(t *testing.T) {
 		c := r.NewChain()
 		r.AddChain(c)
 	}
-	fmt.Println(r)
+	fmt.Println("unsorted table", r)
 	r.SortChains()
-	fmt.Println(r)
+	fmt.Println("sorted table", r)
 
 	h := r.Chains[5].End
 	c, found := r.findChain(h)
