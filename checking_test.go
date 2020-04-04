@@ -2,6 +2,7 @@ package rainbow
 
 import (
 	"crypto"
+	"math/big"
 	"testing"
 	"unsafe"
 )
@@ -35,4 +36,21 @@ func TestChecks(t *testing.T) {
 		t.Fatal("wrong string rune length with utf8 : ", len([]rune(s)))
 	}
 
+}
+
+func BenchmarkBigIntDivMod(b *testing.B) {
+	var i, j, k = (&big.Int{}).SetInt64(111),
+		(&big.Int{}).SetInt64(117),
+		(&big.Int{}).SetInt64(213)
+		// make them bigger ...
+	for t := 0; t < 10; t++ {
+		i.Mul(i, i)
+		j.Mul(j, j)
+		k.Mul(k, k)
+	}
+	// start benchmark
+	b.ResetTimer()
+	for t := 0; t < b.N; t++ {
+		_, _ = i.DivMod(i, j, k)
+	}
 }

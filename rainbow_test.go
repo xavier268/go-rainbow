@@ -8,10 +8,6 @@ import (
 	"testing"
 )
 
-// Test values
-var hashTest = []byte{7, 8, 131, 57, 243, 94, 145, 100, 160, 160, 197, 207, 145, 214, 101, 137}
-var psswdTest = "wbvwcaqf"
-
 func TestBasicRainbow10(t *testing.T) {
 	r := getTestRainbow(10)
 	c1 := r.NewChain()
@@ -27,11 +23,13 @@ func TestBasicRainbow10(t *testing.T) {
 }
 
 func TestChainsBasic10(t *testing.T) {
+
 	r := getTestRainbow(10)
 	for i := 0; i < 10; i++ {
 		c := r.NewChain()
 		r.AddChain(c)
 	}
+
 	fmt.Println("unsorted table", r)
 	r.SortChains()
 	fmt.Println("sorted table", r)
@@ -45,9 +43,11 @@ func TestChainsBasic10(t *testing.T) {
 	}
 
 	// Check retrieving a known password, in the right or wrong chain
+
+	psswdTest, hashTest := r.getPHSample(r.Chains[0], 5)
 	p := []byte{}
 	p, found = r.walkChain(r.Chains[0], hashTest) // correct chain
-	if !found || string(p) != psswdTest {
+	if !found || string(p) != string(psswdTest) {
 		t.Log(string(p), " --> ", hashTest)
 		t.Fatal("was not able to find predefined password, should have been ther")
 	}
@@ -58,7 +58,7 @@ func TestChainsBasic10(t *testing.T) {
 
 	// use the Lookup to do the full cycle
 	p, found = r.Lookup(hashTest)
-	if !found || string(p) != psswdTest {
+	if !found || string(p) != string(psswdTest) {
 		t.Fatal("lookup failed,  retrieving ", string(p), "instead of ", psswdTest)
 	}
 
@@ -70,7 +70,7 @@ func TestChainsBasic10(t *testing.T) {
 	hh := append([]byte{}, hashTest...)
 	hh[0]++ // slight change should prevent retrieving the password ...
 	p, found = r.Lookup(hh)
-	if found || string(p) == psswdTest {
+	if found || string(p) == string(psswdTest) {
 		t.Fatal("lookup should have failed, but did not ! ")
 	}
 
@@ -158,4 +158,16 @@ func getTestRainbow(chainLength int) *Rainbow {
 		HSize: crypto.MD5.Size(),
 		Rand:  rand.New(rand.NewSource(42)),
 	}
+}
+
+// Get a sample hash with coresponding password from the specified chain.
+func (r *Rainbow) getPHSample(c *Chain, level int) (p, h []byte) {
+	h, p = []byte{}, []byte{}
+	h = append(h, c.Start...)
+	for i := 0; i < level; i++ {
+		p = r.R(i, h, p)
+		h = r.H(p, h)
+	}
+	return p, h
+
 }

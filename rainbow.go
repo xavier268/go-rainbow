@@ -43,12 +43,15 @@ func New(hf HashFunction, hsize int, rf ReduceFunction, chainLen int) *Rainbow {
 // ReduceFunction is a function that reduces a hash
 // into a password, the next in the chain.
 // The password value is returned as a byte slice.
-// No allocations are made.
+// We try to use the provided password slice, to avoid allocation.
+// It might be modified - or not, and is not garanteed to equal the result.
 type ReduceFunction func(step int, hash []byte, password []byte) []byte
 
 // HashFunction is a function that hashes a password into a hash
 // hash is put into the provided hash slice, returning it.
-// No allcations are made.
+// We try to avoid allocation, using the passed hash slice.
+// Since hash is usually don't change, no alloc are normally made.
+// The passed hash may be modified - or not.
 type HashFunction func(passwd []byte, hash []byte) []byte
 
 // Chain in the table, contains the start and end hash values
