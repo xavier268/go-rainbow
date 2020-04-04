@@ -9,7 +9,7 @@ import (
 
 func TestAlphaReduce(t *testing.T) {
 	n := 12
-	r := GetAlphaReduceFunc(n)
+	r := getAlphaReduceFunc(n)
 	h := []byte{20, 21, 22, 23, 24, 25, 26, 27, 28, 29, 30, 31, 41}
 	p := []byte{}
 	s := string(r(2, h, p))
@@ -19,7 +19,7 @@ func TestAlphaReduce(t *testing.T) {
 	}
 
 	n = 7
-	r = GetAlphaReduceFunc(n)
+	r = getAlphaReduceFunc(n)
 	s = string(r(2, h, p))
 	ss := string(r(3, h, p))
 	if len(s) != n || len(ss) != n {
@@ -32,7 +32,7 @@ func TestAlphaReduce(t *testing.T) {
 	}
 
 	n = 7
-	r = GetAlphaReduceFunc(n)
+	r = getAlphaReduceFunc(n)
 	s = string(r(0, h, p))
 	ss = string(r(1, h, p))
 	if len(s) != n || len(ss) != n {
@@ -111,7 +111,7 @@ func BenchmarkAlphaReduce1(b *testing.B) {
 	benchmarkAlphaReduce(1, b)
 }
 func benchmarkAlphaReduce(nbChar int, b *testing.B) {
-	red := GetAlphaReduceFunc(nbChar)
+	red := getAlphaReduceFunc(nbChar)
 	h := make([]byte, 16, 16)
 	b.ResetTimer()
 	for i := 0; i < b.N; i++ {

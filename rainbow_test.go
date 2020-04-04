@@ -8,6 +8,10 @@ import (
 	"testing"
 )
 
+// Test values
+var hashTest = []byte{7, 8, 131, 57, 243, 94, 145, 100, 160, 160, 197, 207, 145, 214, 101, 137}
+var psswdTest = "wbvwcaqf"
+
 func TestBasicRainbow10(t *testing.T) {
 	r := getTestRainbow(10)
 	c1 := r.NewChain()
@@ -42,32 +46,31 @@ func TestChainsBasic10(t *testing.T) {
 
 	// Check retrieving a known password, in the right or wrong chain
 	p := []byte{}
-	h = []byte{202, 215, 41, 34, 70, 162, 213, 246, 40, 111, 16, 218, 90, 118, 92, 243}
-	p, found = r.walkChain(r.Chains[1], h)
-	if !found || string(p) != "phzzoozt" {
-		t.Log(string(p), " --> ", h)
-		t.Fatal("was not able to find predefined password")
+	p, found = r.walkChain(r.Chains[0], hashTest) // correct chain
+	if !found || string(p) != psswdTest {
+		t.Log(string(p), " --> ", hashTest)
+		t.Fatal("was not able to find predefined password, should have been ther")
 	}
-	_, found = r.walkChain(r.Chains[2], h)
+	_, found = r.walkChain(r.Chains[1], hashTest) // wrong chain
 	if found {
 		t.Fatal("found a non exiting hash in chain #2 ")
 	}
 
 	// use the Lookup to do the full cycle
-	p, found = r.Lookup(h)
-	if !found || string(p) != "phzzoozt" {
-		t.Fatal("lookup failed,  retrieving ", string(p), "instead of phzzoozt")
+	p, found = r.Lookup(hashTest)
+	if !found || string(p) != psswdTest {
+		t.Fatal("lookup failed,  retrieving ", string(p), "instead of ", psswdTest)
 	}
 
 	// verify ?
-	if bytes.Compare(r.H(p, []byte{}), h) != 0 {
+	if bytes.Compare(r.H(p, []byte{}), hashTest) != 0 {
 		t.Fatal("password returned did not match the requested hash")
 	}
 
-	hh := append([]byte{}, h...)
+	hh := append([]byte{}, hashTest...)
 	hh[0]++ // slight change should prevent retrieving the password ...
 	p, found = r.Lookup(hh)
-	if found || string(p) == "phzzoozt" {
+	if found || string(p) == psswdTest {
 		t.Fatal("lookup should have failed, but did not ! ")
 	}
 
@@ -150,7 +153,7 @@ func (r *Rainbow) benchmarkLookup(nbChains int, b *testing.B) {
 func getTestRainbow(chainLength int) *Rainbow {
 	return &Rainbow{
 		H:     GetMD5Func(),
-		R:     GetAlphaReduceFunc(8),
+		R:     getAlphaReduceFunc(8),
 		Cl:    chainLength,
 		HSize: crypto.MD5.Size(),
 		Rand:  rand.New(rand.NewSource(42)),

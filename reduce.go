@@ -2,22 +2,11 @@ package rainbow
 
 import "math/big"
 
-// GetAlphaReduceFunc creates a ReduceFunction that generates
+// getAlphaReduceFunc creates a ReduceFunction that generates
 // alphabetic lowercases passwords of the exact specified length,
 // within the limit of the number of bytes from the hash.
-func GetAlphaReduceFunc(nbOfChar int) ReduceFunction {
-	return func(step int, h, p []byte) (pp []byte) {
-		pp = p[:0]
-		var s uint64
-		for i := 0; i < nbOfChar && i < len(h); i++ {
-			if i%8 == 0 {
-				s = uint64(step)
-			}
-			pp = append(pp, 'a'+(byte(s)+h[i])%26)
-			s = s >> 8
-		}
-		return pp
-	}
+func getAlphaReduceFunc(nbOfChar int) ReduceFunction {
+	return GetStringReduceFunc(nbOfChar, "abcdefghijklmnopqrstuvwxyz", true)
 }
 
 // GetStringReduceFunc will generate a reduce function that makes words
