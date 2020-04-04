@@ -22,11 +22,12 @@ func GetStringReduceFunc(nbRunes int, alphabet string, exactsize bool) ReduceFun
 	if !exactsize { // one more, pseudo char, to signal to ignore
 		mod.Add(mod, (&big.Int{}).SetInt64(1))
 	}
+	remain := &big.Int{}
+	z := &big.Int{}
 	return func(step int, h, p []byte) (pp []byte) {
 		pp = p[:0] // reusing memory ...
 		var s int
-		remain := &big.Int{}
-		z := (&big.Int{}).SetBytes(h)
+		z.SetBytes(h)
 		for i := 0; i < nbRunes; i++ {
 			if i%64 == 0 {
 				s = int(step)
