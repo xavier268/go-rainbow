@@ -2,7 +2,9 @@ package rainbow
 
 import (
 	"bytes"
+	"crypto"
 	"fmt"
+	"math/big"
 	"math/rand"
 	"sort"
 	"time"
@@ -10,6 +12,8 @@ import (
 
 // Rainbow is the main type to generate tables or lookup a password.
 type Rainbow struct {
+	// hashing algorithm
+	halgo crypto.Hash
 	// hf is the Hash function used to compute from password to hash
 	hf HashFunction
 	// rf is a reduce function, from hash to password
@@ -26,19 +30,29 @@ type Rainbow struct {
 	// Are the chains sorted ?
 	sorted bool
 
-	// RBuilder
-	*RBuilder
+	// The modules used to build the reduce name space
+	rms []rmodule
+	// flag : you can build only once.
+	built bool
+	// cumulative size of the big.Int that will be used
+	used *big.Int
 }
 
-// New constructs a new, empty rainbow table.
-func New(hf HashFunction, hsize int, rf ReduceFunction, chainLen int) *Rainbow {
+// New constructs a new, empty rainbow table,
+// expecting fixed length chains of the specified length.
+func New(hashAlgo crypto.Hash, chainLength int) *Rainbow {
 	r := new(Rainbow)
-	r.hf = hf
-	r.hsize = hsize
-	r.rf = rf
-	r.cl = chainLen
-
+	// define hash
+	r.hf = getCryptoFunc(hashAlgo)
+	r.hsize = hashAlgo.Size()
+	r.halgo = hashAlgo
+	// set chain length
+	r.cl = chainLength
+	// set random generator
 	r.rand = rand.New(rand.NewSource(time.Now().UnixNano()))
+
+	// Used so far by the modules
+	r.used = new(big.Int).SetInt64(1)
 
 	return r
 }
@@ -78,6 +92,24 @@ func (r *Rainbow) NewChain() *Chain {
 		//fmt.Println(string(p), "-->", c.End)
 	}
 	return c
+}
+
+// Build finish compiling the Rainbow table "reduce" function.
+func (r *Rainbow) Build() *Rainbow {
+
+	if r.rf != nil {
+		panic("a reduce function was already defined, you cannot redefine it")
+	}
+
+	// check reduce name space cardinality
+	if r.used.BitLen() > 8*r.hsize {
+		panic("the full reduced name space is larger than the hash space")
+	}
+
+	// update the reduce function
+	r.rf = r.buildReduce()
+
+	return r
 }
 
 // AddChain adds c to the Rainbow Table.

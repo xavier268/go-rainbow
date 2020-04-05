@@ -1,6 +1,7 @@
 package rainbow
 
 import (
+	"crypto"
 	"fmt"
 	"math/big"
 	"testing"
@@ -26,7 +27,7 @@ func TestExtract(t *testing.T) {
 
 func TestRBuilder1(t *testing.T) {
 	min, max := 2, 5
-	red := newRBuilder().CompileAlphabet("Aéi", min, max).Build()
+	red := New(crypto.MD5, 10).CompileAlphabet("Aéi", min, max).buildReduce()
 	p, h := []byte{}, []byte{2, 5, 12, 6, 54, 44, 55, 89, 7, 65, 46, 5, 4}
 	results := make(map[string]int)
 	for i := 0; i < 10000; i++ {
@@ -41,7 +42,7 @@ func TestRBuilder1(t *testing.T) {
 
 func TestRBuilder2(t *testing.T) {
 	min, max := 3, 3
-	red := newRBuilder().CompileAlphabet("aécd", min, max).Build()
+	red := New(crypto.MD5, 10).CompileAlphabet("aécd", min, max).buildReduce()
 	p, h := []byte{}, []byte{2, 5, 12, 6, 54, 44, 55, 89, 7, 65, 46, 5, 4}
 	results := make(map[string]int)
 	for i := 0; i < 10000; i++ {
@@ -56,7 +57,7 @@ func TestRBuilder2(t *testing.T) {
 
 func BenchmarkRBuilderAlphabet(b *testing.B) {
 	min, max := 7, 12
-	red := newRBuilder().CompileAlphabet("abcdefghijklmnopqrstuvwxyz", min, max).Build()
+	red := New(crypto.MD5, 10).CompileAlphabet("abcdefghijklmnopqrstuvwxyz", min, max).buildReduce()
 	p, h := []byte{}, []byte{2, 5,
 		12, 6, 54, 44, 55, 89, 7,
 		12, 6, 54, 44, 55, 89, 7,

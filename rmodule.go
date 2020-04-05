@@ -11,32 +11,16 @@ import (
 // and therefore potentially modifying passed content.
 type rmodule func(b *big.Int, p []byte) (bb *big.Int, pp []byte)
 
-// RBuilder is a structure that can be compiled and generate a ReduceFunc
-// for a specific name space.
-type RBuilder struct {
-	rms []rmodule
-	// flag if already built, you can build only once.
-	built bool
-	// cumulative size of the big.Int that will be used
-	used *big.Int
-}
-
-// newRBuilder constructs and initialize an RBuilder
-func newRBuilder() *RBuilder {
-	rm := new(RBuilder)
-	rm.used = new(big.Int).SetInt64(1)
-	return rm
-}
-
-// Build builds a new ReduceFunction from the RMBuilder.
-func (rm *RBuilder) Build() ReduceFunction {
-	if rm.built {
+// buildReduce builds a new ReduceFunction from the RMBuilder.
+// Will be called by the Rainbow Build, not to be called directly.
+func (r *Rainbow) buildReduce() ReduceFunction {
+	if r.built {
 		panic("build was already called")
 	}
-	if len(rm.rms) == 0 {
+	if len(r.rms) == 0 {
 		panic("cannot build : not rmodules were compiled yet")
 	}
-	rm.built = true
+	r.built = true
 
 	// allocate initial capacity outside ReduceFunction
 	var buf [64]byte
@@ -54,7 +38,7 @@ func (rm *RBuilder) Build() ReduceFunction {
 		p = p[:0]
 
 		// apply the various rmodule
-		for _, f := range rm.rms {
+		for _, f := range r.rms {
 			bi, p = f(bi, p)
 		}
 		// return the last password generated
@@ -65,7 +49,7 @@ func (rm *RBuilder) Build() ReduceFunction {
 // CompileAlphabet will compile an alpbet of runes (a string).
 // It will append to the password, ensuring lenghth
 // is between min(included) and max(included) runes.
-func (rm *RBuilder) CompileAlphabet(alphabet string, min, max int) *RBuilder {
+func (r *Rainbow) CompileAlphabet(alphabet string, min, max int) *Rainbow {
 
 	if len(alphabet) == 0 || max < min || max <= 0 || min < 0 {
 		panic("invalid input parameters")
@@ -84,15 +68,15 @@ func (rm *RBuilder) CompileAlphabet(alphabet string, min, max int) *RBuilder {
 	n := new(big.Int).SetInt64(int64(len(alp)))       // letter choice
 
 	// update used capacity
-	rm.used.Mul(rm.used, ns)
+	r.used.Mul(r.used, ns)
 	for i := 0; i < max; i++ {
-		rm.used.Mul(rm.used, n)
+		r.used.Mul(r.used, n)
 	}
 
 	//fmt.Println("Used capacity so far : ", rm.used)
 
 	// append the rmodule
-	rm.rms = append(rm.rms,
+	r.rms = append(r.rms,
 		func(b *big.Int, p []byte) (*big.Int, []byte) {
 			var v, s int
 
@@ -111,8 +95,8 @@ func (rm *RBuilder) CompileAlphabet(alphabet string, min, max int) *RBuilder {
 			}
 			return b, p
 		})
-	// return the updated RBuilder
-	return rm
+
+	return r
 }
 
 // extract from a big int a value from 0 to (n-1),
