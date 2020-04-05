@@ -99,6 +99,44 @@ func (r *Rainbow) CompileAlphabet(alphabet string, min, max int) *Rainbow {
 	return r
 }
 
+// CompileTransform compile the password transfarmation, with provided probability.
+// 0.0 - means never, and 1.0 means always.
+func (r *Rainbow) CompileTransform(trf func(p []byte) []byte, probability float64) *Rainbow {
+	if probability < 0 || probability > 1 {
+		panic("probability needs to be between 0.0 and 1.0")
+	}
+	if trf == nil {
+		panic("transformation fonction must be provided, cannot be nul")
+	}
+
+	var pp []byte
+	buf := new(big.Int)
+	var prob = probability
+
+	// Update used capacity
+	r.used.Mul(r.used, new(big.Int).SetInt64(2))
+
+	// add the module, that would call trf
+	r.rms = append(r.rms,
+		func(b *big.Int, p []byte) (*big.Int, []byte) {
+			// decide on probability
+			v := extractf(b, buf)
+			b = b.Rsh(b, 1) // Shift right by one, consuming b
+
+			// DEBUG
+			// fmt.Print("\t ", v, "\t")
+
+			if v < prob {
+				pp = trf(p)
+				return b, pp
+			}
+			// else, do nothing
+			return b, p
+		})
+	return r
+
+}
+
 // CompileWordList will load the word list from file,
 // store it in memory, and select one on every reduce operation,
 // that will be appended to the current password.
@@ -156,10 +194,16 @@ func extract(b *big.Int, n *big.Int, v *big.Int) (bb *big.Int, vv int) {
 	return b, int(v.Int64())
 }
 
-// BIGDIV ais a large numebr constant used to generate a float with extractf
-var BIGDIV = new(big.Int).SetInt64(100_000)
+// largeConstantAsBig is a large number constant used to generate a float with extractf
+var largeConstantAsBig = new(big.Int).SetInt64(largeConstant)
+var largePrimeAsBig = new(big.Int).SetInt64(largePrime)
+
+const largeConstant = 1_000_000_000
+const largePrime = 2_147_483_647
 
 // return a float uniformely distributed between 0 and 1
-func extractf(b *big.Int, buf *big.Int) (v float64) {
-	return float64(buf.Mod(b, BIGDIV).Int64()) / 100_000.
+func extractf(b *big.Int, buf *big.Int) float64 {
+	buf = buf.Mul(b, largePrimeAsBig)
+	buf = buf.Mod(buf, largeConstantAsBig)
+	return float64(buf.Int64()) / float64(largeConstant)
 }

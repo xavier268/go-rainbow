@@ -5,6 +5,8 @@ import (
 	"fmt"
 	"math"
 	"math/big"
+	"math/rand"
+	"strings"
 	"testing"
 )
 
@@ -80,7 +82,7 @@ func TestExtractf(t *testing.T) {
 	var v, s, ss float64
 	n := 1_000_000.
 	for i := 0.; i < n; i++ {
-		b := new(big.Int).Rand(r.rand, BIGDIV)
+		b := new(big.Int).Rand(r.rand, largeConstantAsBig)
 		v = extractf(b, buf)
 		s += v
 		ss += v * v
@@ -123,4 +125,54 @@ func BenchmarkExtract(b *testing.B) {
 	}
 	if v == 0 {
 	}
+}
+
+func TestVisualCompileWords(t *testing.T) {
+
+	r := New(crypto.MD5, 10).
+		CompileWordList("words_test.txt").
+		CompileAlphabet("0123456789", 0, 2).
+		Build()
+
+	n := 20
+	h := []byte{1, 3, 55, 6, 4, 44, 55, 88, 99, 77, 22, 33, 11, 121, 65, 4, 5, 5, 55, 4, 4}
+	fmt.Println("==============================")
+	fmt.Println("List of words concatened with 0 to 2 digits")
+	for i := 0; i < n; i++ {
+		p := r.rf(i, h, []byte{})
+		fmt.Println(string(p))
+	}
+	fmt.Println("==============================")
+}
+
+func TestVisualCompileTransform(t *testing.T) {
+
+	trf := func(p []byte) []byte {
+		return []byte("**" + strings.ToUpper(string(p)) + "**")
+	}
+
+	r := New(crypto.MD5, 10).
+		CompileWordList("words_test.txt").
+		CompileTransform(trf, 1./3.).
+		Build()
+
+	n := 1000
+	h := make([]byte, 16)
+	rand.Read(h)
+
+	capi := 0
+
+	fmt.Println("List of words, 1/3rd of them capitalized ")
+	for i := 0; i < n; i++ {
+		p := r.rf(i, h, []byte{})
+		if p[0] == byte('*') {
+			capi++
+		}
+	}
+	ratio := float64(capi) / float64(n)
+	fmt.Printf("Capitalized Actual : %2.1f%%\t Target : %2.1f%%\n", 100.*ratio, 100./3.)
+	if ratio < .3 || ratio > 0.35 {
+		t.Fatal("unexpected ratio of capitalized letters")
+	}
+
 }
