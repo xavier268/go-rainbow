@@ -1,7 +1,9 @@
 package rainbow
 
 import (
+	"bufio"
 	"math/big"
+	"os"
 )
 
 // a rmodule accptets a big.Int derived from the hash and the previous
@@ -91,6 +93,52 @@ func (r *Rainbow) CompileAlphabet(alphabet string, min, max int) *Rainbow {
 				b, v = extract(b, n, buf)
 				p = append(p, alp[v]...)
 			}
+			return b, p
+		})
+
+	return r
+}
+
+// CompileWordList will load the word list from file,
+// store it in memory, and select one on every reduce operation,
+// that will be appended to the current password.
+// The words are listed in the provided file, space separated,
+// as per the ScanWords SplitFunction.
+func (r *Rainbow) CompileWordList(fName string) *Rainbow {
+
+	// Open file
+	f, err := os.Open(fName)
+	if err != nil {
+		panic(err)
+	}
+	defer f.Close()
+
+	// scan and store words in memory
+	var words [][]byte
+	scanner := bufio.NewScanner(f)
+	scanner.Split(bufio.ScanWords)
+	for scanner.Scan() {
+		words = append(words, scanner.Bytes())
+	}
+
+	// allocate memory and "constants"
+	buf := new(big.Int).SetInt64(10000)
+	nbw := new(big.Int).SetInt64(int64(len(words)))
+
+	// update capacity used
+	r.used.Mul(r.used, nbw)
+
+	// append the module
+	r.rms = append(r.rms,
+		func(b *big.Int, p []byte) (*big.Int, []byte) {
+			var v int
+			// Select the word
+			b, v = extract(b, nbw, buf)
+
+			// append selected word
+			p = append(p, words[v]...)
+
+			// return
 			return b, p
 		})
 
