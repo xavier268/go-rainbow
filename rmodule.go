@@ -67,13 +67,11 @@ func (r *Rainbow) CompileAlphabet(alphabet string, min, max int) *Rainbow {
 	ns := new(big.Int).SetInt64(int64(max - min + 1)) // size choice
 	n := new(big.Int).SetInt64(int64(len(alp)))       // letter choice
 
-	// update used capacity
+	// update used capacity (approx)
 	r.used.Mul(r.used, ns)
 	for i := 0; i < max; i++ {
 		r.used.Mul(r.used, n)
 	}
-
-	//fmt.Println("Used capacity so far : ", rm.used)
 
 	// append the rmodule
 	r.rms = append(r.rms,
@@ -108,4 +106,12 @@ func (r *Rainbow) CompileAlphabet(alphabet string, min, max int) *Rainbow {
 func extract(b *big.Int, n *big.Int, v *big.Int) (bb *big.Int, vv int) {
 	b, v = b.DivMod(b, n, v)
 	return b, int(v.Int64())
+}
+
+// BIGDIV ais a large numebr constant used to generate a float with extractf
+var BIGDIV = new(big.Int).SetInt64(100_000)
+
+// return a float uniformely distributed between 0 and 1
+func extractf(b *big.Int, buf *big.Int) (v float64) {
+	return float64(buf.Mod(b, BIGDIV).Int64()) / 100_000.
 }
