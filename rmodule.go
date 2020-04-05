@@ -21,8 +21,8 @@ type RBuilder struct {
 	used *big.Int
 }
 
-// NewRBuilder constructs and initialize an RBuilder
-func NewRBuilder() *RBuilder {
+// newRBuilder constructs and initialize an RBuilder
+func newRBuilder() *RBuilder {
 	rm := new(RBuilder)
 	rm.used = new(big.Int).SetInt64(1)
 	return rm

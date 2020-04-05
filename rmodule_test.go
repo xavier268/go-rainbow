@@ -26,7 +26,7 @@ func TestExtract(t *testing.T) {
 
 func TestRBuilder1(t *testing.T) {
 	min, max := 2, 5
-	red := NewRBuilder().CompileAlphabet("Aéi", min, max).Build()
+	red := newRBuilder().CompileAlphabet("Aéi", min, max).Build()
 	p, h := []byte{}, []byte{2, 5, 12, 6, 54, 44, 55, 89, 7, 65, 46, 5, 4}
 	results := make(map[string]int)
 	for i := 0; i < 10000; i++ {
@@ -41,7 +41,7 @@ func TestRBuilder1(t *testing.T) {
 
 func TestRBuilder2(t *testing.T) {
 	min, max := 3, 3
-	red := NewRBuilder().CompileAlphabet("aécd", min, max).Build()
+	red := newRBuilder().CompileAlphabet("aécd", min, max).Build()
 	p, h := []byte{}, []byte{2, 5, 12, 6, 54, 44, 55, 89, 7, 65, 46, 5, 4}
 	results := make(map[string]int)
 	for i := 0; i < 10000; i++ {
@@ -56,7 +56,7 @@ func TestRBuilder2(t *testing.T) {
 
 func BenchmarkRBuilderAlphabet(b *testing.B) {
 	min, max := 7, 12
-	red := NewRBuilder().CompileAlphabet("abcdefghijklmnopqrstuvwxyz", min, max).Build()
+	red := newRBuilder().CompileAlphabet("abcdefghijklmnopqrstuvwxyz", min, max).Build()
 	p, h := []byte{}, []byte{2, 5,
 		12, 6, 54, 44, 55, 89, 7,
 		12, 6, 54, 44, 55, 89, 7,

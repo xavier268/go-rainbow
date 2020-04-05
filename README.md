@@ -1,7 +1,11 @@
 
 # GO-RAINBOW
 
-Rainbow tables for rule-based hash inversion.
+Rainbow tables for specific customized name spaces
+
+## Quick start
+
+
 
 ## Context
 
@@ -32,13 +36,13 @@ But has its own drawbacks :
 
 ## Goals of this package
 
-Current package attempts to find a "best of both worlds" approach to the problem.
+Current package attempts to find a "best of both worlds" approach to the problem, by adding a flexible, rule-based capability to the traditionnal rainbow-table approach. 
 
 Targeted benefits are :
 * table based, with space/time tradeoff inspired by rainbow tables, that can be computed in advance
 * rule-driven ( word lists and mangling ) to limit the scope of searches to likely passwords, enabling longer passwords in exchange for shorter unlikely ones,
-* weighting mecanisms to prioritize encoding (and search success) of most likely passwords,
-* no (practical) password size limits ( but of course, provided rules are restrictive enough ... )
+* weighting mecanisms to prioritize encoding (and search success) of most likely passwords (tbd ?)
+* no (practical) password size limits ( but of course, provided rules are restrictive enough ... the name space cannot exceed the total number of hash values !)
 
 ## Design principles 
 
@@ -50,9 +54,6 @@ Each chain has the following structure :
 * Px are variable length, Hx is fixed length  
 * The length of the chain, n, is constant and predefined
 * No effort is made to avoid collisions and make a "perfect" table (see why in the above reference paper)
-* we store H0 and Hn
+* H0 and Hn define the *Chain*, *Chain*s are stored in a *Rainbow* (table) object.
 
-To achieve our gaols, the key is to define the best reduce function(s), so that :
-* it takes the index x of (Hx, Px) as input (to prevent cycles)
-* it should use the provided mangling rules (how ?)
-* it should be biaised towards the most likely passwords (how ?)
+Before using a newly created *Rainbow* table, you need to compile the various *Reduce* rules that will be applied.

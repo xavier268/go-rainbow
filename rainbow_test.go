@@ -12,10 +12,10 @@ func TestBasicRainbow10(t *testing.T) {
 	r := getTestRainbow(10)
 	c1 := r.NewChain()
 	c2 := r.NewChain()
-	if bytes.Compare(c1.Start, c2.Start) == 0 ||
-		bytes.Compare(c1.End, c2.End) == 0 ||
-		bytes.Compare(c1.End, c1.Start) == 0 ||
-		bytes.Compare(c2.End, c2.Start) == 0 {
+	if bytes.Compare(c1.start, c2.start) == 0 ||
+		bytes.Compare(c1.end, c2.end) == 0 ||
+		bytes.Compare(c1.end, c1.start) == 0 ||
+		bytes.Compare(c2.end, c2.start) == 0 {
 		fmt.Printf("%+v\n", c1)
 		fmt.Printf("%+v\n", c2)
 		t.Fatal("unexpected chain collisions")
@@ -34,24 +34,24 @@ func TestChainsBasic10(t *testing.T) {
 	r.SortChains()
 	fmt.Println("sorted table", r)
 
-	h := r.Chains[5].End
+	h := r.chains[5].end
 	c, found := r.findChain(h)
-	if !found || bytes.Compare(c.End, h) != 0 {
+	if !found || bytes.Compare(c.end, h) != 0 {
 		t.Log(h)
-		t.Log(r.Chains[5])
+		t.Log(r.chains[5])
 		t.Fatal("should have found chain # 5")
 	}
 
 	// Check retrieving a known password, in the right or wrong chain
 
-	psswdTest, hashTest := r.getPHSample(r.Chains[0], 5)
+	psswdTest, hashTest := r.getPHSample(r.chains[0], 5)
 	p := []byte{}
-	p, found = r.walkChain(r.Chains[0], hashTest) // correct chain
+	p, found = r.walkChain(r.chains[0], hashTest) // correct chain
 	if !found || string(p) != string(psswdTest) {
 		t.Log(string(p), " --> ", hashTest)
 		t.Fatal("was not able to find predefined password, should have been ther")
 	}
-	_, found = r.walkChain(r.Chains[1], hashTest) // wrong chain
+	_, found = r.walkChain(r.chains[1], hashTest) // wrong chain
 	if found {
 		t.Fatal("found a non exiting hash in chain #2 ")
 	}
@@ -63,7 +63,7 @@ func TestChainsBasic10(t *testing.T) {
 	}
 
 	// verify ?
-	if bytes.Compare(r.H(p, []byte{}), hashTest) != 0 {
+	if bytes.Compare(r.hf(p, []byte{}), hashTest) != 0 {
 		t.Fatal("password returned did not match the requested hash")
 	}
 
@@ -152,21 +152,21 @@ func (r *Rainbow) benchmarkLookup(nbChains int, b *testing.B) {
 
 func getTestRainbow(chainLength int) *Rainbow {
 	return &Rainbow{
-		H:     GetMD5Func(),
-		R:     getAlphaReduceFunc(8),
-		Cl:    chainLength,
-		HSize: crypto.MD5.Size(),
-		Rand:  rand.New(rand.NewSource(42)),
+		hf:    getCryptoFunc(crypto.MD5),
+		rf:    getAlphaReduceFunc(8),
+		cl:    chainLength,
+		hsize: crypto.MD5.Size(),
+		rand:  rand.New(rand.NewSource(42)),
 	}
 }
 
 // Get a sample hash with coresponding password from the specified chain.
 func (r *Rainbow) getPHSample(c *Chain, level int) (p, h []byte) {
 	h, p = []byte{}, []byte{}
-	h = append(h, c.Start...)
+	h = append(h, c.start...)
 	for i := 0; i < level; i++ {
-		p = r.R(i, h, p)
-		h = r.H(p, h)
+		p = r.rf(i, h, p)
+		h = r.hf(p, h)
 	}
 	return p, h
 

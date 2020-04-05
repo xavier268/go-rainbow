@@ -10,32 +10,35 @@ import (
 
 // Rainbow is the main type to generate tables or lookup a password.
 type Rainbow struct {
-	// H is the Hash function used to compute from password to hash
-	H HashFunction
-	// R is a reduce function, from hash to password
+	// hf is the Hash function used to compute from password to hash
+	hf HashFunction
+	// rf is a reduce function, from hash to password
 	// It conforms to the hash.Hash interface.
-	R ReduceFunction
-	// Cl is the chain length (constant)
-	Cl int
-	// HSize is the size of the HashFunction result in  bytes
-	HSize int
+	rf ReduceFunction
+	// cl is the chain length (constant)
+	cl int
+	// hsize is the size of the HashFunction result in  bytes
+	hsize int
 	// Random generator
-	Rand *rand.Rand
-	// Chains
-	Chains []*Chain
+	rand *rand.Rand
+	// chains
+	chains []*Chain
 	// Are the chains sorted ?
 	sorted bool
+
+	// RBuilder
+	*RBuilder
 }
 
 // New constructs a new, empty rainbow table.
 func New(hf HashFunction, hsize int, rf ReduceFunction, chainLen int) *Rainbow {
 	r := new(Rainbow)
-	r.H = hf
-	r.HSize = hsize
-	r.R = rf
-	r.Cl = chainLen
+	r.hf = hf
+	r.hsize = hsize
+	r.rf = rf
+	r.cl = chainLen
 
-	r.Rand = rand.New(rand.NewSource(time.Now().UnixNano()))
+	r.rand = rand.New(rand.NewSource(time.Now().UnixNano()))
 
 	return r
 }
@@ -56,8 +59,8 @@ type HashFunction func(passwd []byte, hash []byte) []byte
 
 // Chain in the table, contains the start and end hash values
 type Chain struct {
-	Start []byte
-	End   []byte
+	start []byte
+	end   []byte
 }
 
 // NewChain builds a new Chain, from random start.
@@ -65,13 +68,13 @@ type Chain struct {
 // See - AddChain below.
 func (r *Rainbow) NewChain() *Chain {
 	c := new(Chain)
-	c.Start = make([]byte, r.HSize, r.HSize)
-	r.Rand.Read(c.Start)
-	c.End = append([]byte{}, c.Start...)
+	c.start = make([]byte, r.hsize, r.hsize)
+	r.rand.Read(c.start)
+	c.end = append([]byte{}, c.start...)
 	p := []byte{}
-	for i := 0; i < r.Cl; i++ {
-		p = r.R(i, c.End, p)
-		c.End = r.H(p, c.End)
+	for i := 0; i < r.cl; i++ {
+		p = r.rf(i, c.end, p)
+		c.end = r.hf(p, c.end)
 		//fmt.Println(string(p), "-->", c.End)
 	}
 	return c
@@ -80,7 +83,7 @@ func (r *Rainbow) NewChain() *Chain {
 // AddChain adds c to the Rainbow Table.
 // The array is not immediately sorted.
 func (r *Rainbow) AddChain(c ...*Chain) {
-	r.Chains = append(r.Chains, c...)
+	r.chains = append(r.chains, c...)
 	r.sorted = false
 }
 
@@ -90,8 +93,8 @@ func (r *Rainbow) SortChains() {
 	if r.sorted {
 		return
 	}
-	sort.Slice(r.Chains, func(i, j int) bool {
-		return bytes.Compare(r.Chains[i].End, r.Chains[j].End) < 0
+	sort.Slice(r.chains, func(i, j int) bool {
+		return bytes.Compare(r.chains[i].end, r.chains[j].end) < 0
 	})
 }
 
@@ -100,8 +103,8 @@ func (r *Rainbow) String() string {
 		"\n   DUMPING RAINBOW TABLE " +
 		"\n============================"
 
-	for i, c := range r.Chains {
-		s += fmt.Sprintf("\n%d\nStart:\t% X\nEnd : \t% X\n", i, c.Start, c.End)
+	for i, c := range r.chains {
+		s += fmt.Sprintf("\n%d\nStart:\t% X\nEnd : \t% X\n", i, c.start, c.end)
 	}
 	return s + "\n"
 }
@@ -111,13 +114,13 @@ func (r *Rainbow) String() string {
 func (r *Rainbow) Lookup(h []byte) (p []byte, found bool) {
 
 	var buf []byte
-	for depth := 0; depth < r.Cl; depth++ {
+	for depth := 0; depth < r.cl; depth++ {
 		buf = append(buf[0:0], h...)
 
 		// compute the chain ending to look for ...
-		for i := r.Cl - depth; i < r.Cl; i++ {
-			p = r.R(i, buf, p)
-			buf = r.H(p, buf)
+		for i := r.cl - depth; i < r.cl; i++ {
+			p = r.rf(i, buf, p)
+			buf = r.hf(p, buf)
 		}
 		// Do we know of such a chain ?
 		c, found := r.findChain(buf)
@@ -138,11 +141,11 @@ func (r *Rainbow) Lookup(h []byte) (p []byte, found bool) {
 // that led to the provided hash h.
 func (r *Rainbow) walkChain(c *Chain, h []byte) (p []byte, found bool) {
 	found = false
-	buf := append([]byte{}, c.Start...)
-	p = make([]byte, 0, r.HSize)
-	for i := 0; i < r.Cl; i++ {
-		p = r.R(i, buf, p)
-		buf = r.H(p, buf)
+	buf := append([]byte{}, c.start...)
+	p = make([]byte, 0, r.hsize)
+	for i := 0; i < r.cl; i++ {
+		p = r.rf(i, buf, p)
+		buf = r.hf(p, buf)
 		if bytes.Compare(buf, h) == 0 {
 			return p, true
 		}
@@ -155,8 +158,8 @@ func (r *Rainbow) findChain(endHash []byte) (c *Chain, found bool) {
 	if !r.sorted {
 		r.SortChains()
 	}
-	for _, c := range r.Chains {
-		switch bytes.Compare(endHash, c.End) {
+	for _, c := range r.chains {
+		switch bytes.Compare(endHash, c.end) {
 		case 0:
 			return c, true
 		case 1: // loop ...

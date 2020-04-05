@@ -8,8 +8,8 @@ import (
 	_ "crypto/sha1"
 )
 
-// GetCryptoFunc constructs a HashFunc based on the underlying crypto.Hash.
-func GetCryptoFunc(ch crypto.Hash) HashFunction {
+// getCryptoFunc constructs a HashFunc based on the underlying crypto.Hash.
+func getCryptoFunc(ch crypto.Hash) HashFunction {
 	if !ch.Available() {
 		panic("the requested crypto algorith has not been imported and is not available")
 	}
@@ -19,14 +19,4 @@ func GetCryptoFunc(ch crypto.Hash) HashFunction {
 		hh.Write(p)
 		return hh.Sum(h[:0])
 	}
-}
-
-// GetMD5Func retun a MD5 hash function
-func GetMD5Func() HashFunction {
-	return GetCryptoFunc(crypto.MD5)
-}
-
-// GetSHA1Func retun a MD5 hash function
-func GetSHA1Func() HashFunction {
-	return GetCryptoFunc(crypto.SHA1)
 }

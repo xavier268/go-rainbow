@@ -2,11 +2,12 @@ package rainbow
 
 import (
 	"bytes"
+	"crypto"
 	"testing"
 )
 
 func TestMD5(t *testing.T) {
-	md := GetMD5Func()
+	md := getCryptoFunc(crypto.MD5)
 	h1 := md([]byte("hello world"), []byte{})
 	h2 := md([]byte("hello world"), []byte{})
 	// two different slices
@@ -33,7 +34,7 @@ func TestMD5(t *testing.T) {
 }
 
 func BenchmarkHashFunctionMD5(b *testing.B) {
-	md := GetMD5Func()
+	md := getCryptoFunc(crypto.MD5)
 	h := make([]byte, 16, 16)
 	b.ResetTimer()
 	for i := 0; i < b.N; i++ {
