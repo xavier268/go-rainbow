@@ -10,19 +10,25 @@ import (
 	"time"
 )
 
+// VERSION of the package
+const VERSION float64 = 0.3
+
 // Rainbow is the main type to generate tables or lookup a password.
 type Rainbow struct {
 	// hashing algorithm
 	halgo crypto.Hash
 	// hf is the Hash function used to compute from password to hash
 	hf HashFunction
+	// hsize is the size of the HashFunction result in  bytes
+	hsize int
+
 	// rf is a reduce function, from hash to password
 	// It conforms to the hash.Hash interface.
 	rf ReduceFunction
+
 	// cl is the chain length (constant)
 	cl int
-	// hsize is the size of the HashFunction result in  bytes
-	hsize int
+
 	// Random generator
 	rand *rand.Rand
 	// chains
@@ -92,6 +98,11 @@ func (r *Rainbow) NewChain() *Chain {
 		//fmt.Println(string(p), "-->", c.End)
 	}
 	return c
+}
+
+// BitLen provides the number of bits needed to encode the namespace.
+func (r *Rainbow) BitLen() int {
+	return r.used.BitLen()
 }
 
 // Build finish compiling the Rainbow table "reduce" function.
