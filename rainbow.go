@@ -10,8 +10,10 @@ import (
 	"time"
 )
 
-// VERSION of the package
-const VERSION float64 = 0.3
+// Version of the package
+func Version() (major, minor int) {
+	return 0, 4
+}
 
 // Rainbow is the main type to generate tables or lookup a password.
 type Rainbow struct {
@@ -83,6 +85,15 @@ type Chain struct {
 	end   []byte
 }
 
+// Equal compare chains
+func (c *Chain) Equal(cc *Chain) bool {
+	if cc == nil {
+		return false
+	}
+	return bytes.Compare(c.start, cc.start) == 0 &&
+		bytes.Compare(c.end, cc.end) == 0
+}
+
 // NewChain builds a new Chain, from random start.
 // It is not immediateley added to the Chains slice in r.
 // See - AddChain below.
@@ -132,13 +143,18 @@ func (r *Rainbow) AddChain(c ...*Chain) {
 
 // SortChains will ensure Chains are sorted for Lookup.
 // Sort by increasing byte order of chain.End.
+// It also dedup chains.
 func (r *Rainbow) SortChains() {
 	if r.sorted {
 		return
 	}
+	fmt.Println("Sorting chains ...")
 	sort.Slice(r.chains, func(i, j int) bool {
 		return bytes.Compare(r.chains[i].end, r.chains[j].end) < 0
 	})
+	r.sorted = true
+	// dedup - TODO - not working efficiently enough yet
+	// r.dedupChains()
 }
 
 func (r *Rainbow) String() string {
@@ -211,4 +227,32 @@ func (r *Rainbow) findChain(endHash []byte) (c *Chain, found bool) {
 		}
 	}
 	return nil, false
+}
+
+// dedupChains deduplicate identical chains.
+func (r *Rainbow) dedupChains() {
+
+	panic("deprecated and not tested enough")
+
+	/*
+		// only dedup when sorted
+		if !r.sorted {
+			r.SortChains()
+			return
+		}
+
+
+
+		// dedup, maintaining order
+		for i := 0; i < len(r.chains); i++ {
+			for j := i + 1; j < len(r.chains); j++ {
+				if r.chains[i].Equal(r.chains[j]) {
+					copy(r.chains[i:], r.chains[i+1:])
+					r.chains = r.chains[:len(r.chains)-1]
+					j--
+					break
+				}
+			}
+		}
+	*/
 }
