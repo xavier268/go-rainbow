@@ -35,7 +35,9 @@ func TestChainsBasic10(t *testing.T) {
 	fmt.Println("sorted table", r)
 
 	h := r.chains[5].end
-	c, found := r.findChain(h)
+	from, to, found := r.findChain(h)
+	t.Logf("%d matching chain(s) : from %d(included) to %d(excluded)", to-from, from, to)
+	c := r.chains[from]
 	if !found || bytes.Compare(c.end, h) != 0 {
 		t.Log(h)
 		t.Log(r.chains[5])
@@ -229,5 +231,30 @@ func TestDedup150(t *testing.T) {
 		fmt.Println(r.getHeader())
 		fmt.Println("Nb of chains : ", len(r.chains))
 		t.Fatal("insufficinet deduplication")
+	}
+}
+
+func TestFindChain(t *testing.T) {
+
+	// create a rainbow table
+	r := New(crypto.MD5, 20)
+	r.CompileAlphabet("abcdefg", 3, 5).Build()
+	for i := 0; i < 500; i++ {
+		r.AddChain(r.NewChain())
+	}
+
+	r.SortChains()
+
+	testH := r.chains[25].end
+
+	from, to, found := r.findChain(testH)
+	if found {
+		t.Logf("Found %d chains, from %d(incl.) to %d(excl.)", to-from, from, to)
+		if from > 25 || to <= 25 {
+			t.Fatal("selected chain (25) in not within the retuned interval")
+		}
+	} else {
+		t.Logf("from %d, to %d", from, to)
+		t.Fatal("should have found at least a chain")
 	}
 }

@@ -181,16 +181,21 @@ func (r *Rainbow) Lookup(h []byte) (p []byte, found bool) {
 			p = r.rf(i, buf, p)
 			buf = r.hf(p, buf)
 		}
-		// Do we know of such a chain ?
-		c, found := r.findChain(buf)
+		// Do we know of such  chains ?
+		from, to, found := r.findChain(buf)
 		if found {
-			// Now, c might contain the solution ...
-			p, found = r.walkChain(c, h)
-			if found {
-				// got it !
-				return p, found
+			// loop onpotential candidates ...
+			for i := from; i < to; i++ {
+				c := r.chains[i]
+				// Now, c might contain the solution ?
+				p, found = r.walkChain(c, h)
+				if found {
+					// got it !
+					return p, found
+				}
+				// false positive,
+				// check other matching chains ...
 			}
-			// too bad, false positive ...
 		}
 	}
 	return nil, false
@@ -212,21 +217,36 @@ func (r *Rainbow) walkChain(c *Chain, h []byte) (p []byte, found bool) {
 	return nil, false
 }
 
-// findChain look for the chain given its ending.
-func (r *Rainbow) findChain(endHash []byte) (c *Chain, found bool) {
+// findChain look for the chains given its ending.
+// return the index of the matching chain, from (included) to (excluded)
+func (r *Rainbow) findChain(endHash []byte) (from, to int, found bool) {
 	if !r.sorted {
 		r.SortChains()
 	}
-	for _, c := range r.chains {
-		switch bytes.Compare(endHash, c.end) {
-		case 0:
-			return c, true
-		case 1: // loop ...
-		case -1: // too far ...
-			return nil, false
+
+	from = -1
+	to = -1
+	for i, c := range r.chains {
+		// look for lower bound ...
+		if from < 0 {
+			switch bytes.Compare(endHash, c.end) {
+			case 0:
+				from = i
+				to = from + 1
+			case 1: // not yet, search again
+			case -1: // too far, nothing found
+				return from, to, false
+			}
+		} else {
+			switch bytes.Compare(endHash, c.end) {
+			case 0:
+				to = i + 1
+			default:
+				return from, to, true
+			}
 		}
 	}
-	return nil, false
+	return from, to, from >= 0 && to >= 0
 }
 
 // DedupChains deduplicate identical chains.
