@@ -82,7 +82,18 @@ for i := 0; i< nbChainsToCompute; i++ {
 
 #### 4. Save to (load from ) file
 
-tbc
+To save to file, you just call Save on a io.Writer. 
+````golang
+err := r.Save(writer)
+````
+To load saved tables, you must first recreate the same empty table, then call Load. If there are existing chains, the new chains will be dedupliacted and merged.
+````golang
+r := New(crypto.SHA1, 300_000).
+    CompileAlphabet("1234567890",5,30).
+    Build().
+    Load(reader)
+````
+
 
 #### 5. Use an existing table to lookup a password
 

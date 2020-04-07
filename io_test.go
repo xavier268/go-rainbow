@@ -35,6 +35,7 @@ func TestHeader(t *testing.T) {
 }
 
 func TestSaveLoad(t *testing.T) {
+	testNbChains := 20_000
 	fname := "testTable.rbw"
 	b, e := os.Create(fname)
 	if e != nil {
@@ -44,10 +45,9 @@ func TestSaveLoad(t *testing.T) {
 	// SAVING
 	r := New(crypto.MD5, 20)
 	r.CompileAlphabet("abcdefgh", 2, 2).Build()
-	for i := 0; i < 5_000; i++ {
+	for i := 0; i < testNbChains; i++ {
 		r.AddChain(r.NewChain())
 	}
-	r.DedupChains()
 	fmt.Println(r.getHeader())
 
 	err := r.Save(b)
@@ -65,28 +65,45 @@ func TestSaveLoad(t *testing.T) {
 	if e != nil {
 		t.Fatal(e)
 	}
-	defer b.Close()
 
 	err = rr.Load(b)
+	b.Close()
 	if err != nil {
 		t.Fatal(err)
 	}
-	fmt.Println("rr loaded : ", rr.getHeader())
+
+	fmt.Println("rr loaded : ", rr.getHeader(), " with ", len(rr.chains), "chains now")
 
 	// Detailled comparisons ...
 	if len(rr.chains) != len(r.chains) {
-		t.Fatalf("before dedup length do not match %d saved, but %d loaded", len(r.chains), len(rr.chains))
+		t.Fatalf("length do not match %d saved, but %d loaded", len(r.chains), len(rr.chains))
 	}
-	r.DedupChains()
-	rr.DedupChains()
-	if len(rr.chains) != len(r.chains) {
-		t.Fatalf("after dedup length do not match %d saved, but %d loaded", len(r.chains), len(rr.chains))
-	}
-
 	for i := range r.chains {
 		if !r.chains[i].Equal(r.chains[i]) {
 			t.Fatalf("chains # %d differ", i)
 		}
 	}
+
+	// Load rr a second time
+	b, e = os.Open(fname)
+	if e != nil {
+		t.Fatal(e)
+	}
+
+	err = rr.Load(b)
+	b.Close()
+	if err != nil {
+		t.Fatal(err)
+	}
+	fmt.Println("rr loaded twice : ", rr.getHeader(), " with ", len(rr.chains), "chains now")
+	if len(rr.chains) != len(r.chains) {
+		t.Fatalf("after dedup, length do not match %d saved, but %d loaded", len(r.chains), len(rr.chains))
+	}
+	for i := range r.chains {
+		if !r.chains[i].Equal(r.chains[i]) {
+			t.Fatalf("chains # %d differ", i)
+		}
+	}
+	b.Close()
 
 }

@@ -113,7 +113,7 @@ func (r *Rainbow) checkHeader(hd *header) error {
 
 // Save rainbow table content
 func (r *Rainbow) Save(writer io.Writer) error {
-	r.SortChains()
+	r.DedupChains()
 	buf := bufio.NewWriter(writer)
 	h := r.getHeader()
 	if e := binary.Write(buf, mode, uint64(len(h.toBytes()))); e != nil {
@@ -194,17 +194,14 @@ func (r *Rainbow) Load(reader io.Reader) error {
 		}
 	}
 
-	// test for abnormal errors ...
-	if e != io.EOF {
-		return e
+	// Dedup (and sort) when finished loading.
+	r.DedupChains()
+
+	// ignore eof
+	if e == io.EOF {
+		return nil
 	}
 
-	if e != nil {
-		fmt.Println(nb, "chains loaded")
-	}
-
-	// Sort (and dedup) when finished loading.
-	r.SortChains()
-	// ignore normal eof
-	return nil
+	// unexpected errors
+	return e
 }
