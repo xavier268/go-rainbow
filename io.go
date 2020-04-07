@@ -17,7 +17,6 @@ type header struct {
 	magic        string
 	major, minor int
 	chainLen     int
-	nbChain      int
 	halgo        crypto.Hash
 	used         string
 }
@@ -46,7 +45,6 @@ func (hd *header) toBytes() []byte {
 	binary.Write(buf, mode, uint64(hd.major))
 	binary.Write(buf, mode, uint64(hd.minor))
 	binary.Write(buf, mode, uint64(hd.chainLen))
-	binary.Write(buf, mode, uint64(hd.nbChain))
 	binary.Write(buf, mode, uint64(hd.halgo))
 	binary.Write(buf, mode, uint64(len(hd.used)))
 	binary.Write(buf, mode, []byte(hd.used))
@@ -70,8 +68,6 @@ func (hd *header) fromBytes(data []byte) *header {
 	binary.Read(buf, mode, &l)
 	hd.chainLen = int(l)
 	binary.Read(buf, mode, &l)
-	hd.nbChain = int(l)
-	binary.Read(buf, mode, &l)
 	hd.halgo = crypto.Hash(l)
 	binary.Read(buf, mode, &l)
 	bb = make([]byte, l)
@@ -86,7 +82,6 @@ func (r *Rainbow) getHeader() *header {
 	hd.magic = "go-rainbow"
 	hd.major, hd.minor = Version()
 	hd.chainLen = r.cl
-	hd.nbChain = len(r.chains)
 	hd.halgo = r.halgo
 	hd.used = r.used.String()
 	return hd
@@ -127,17 +122,28 @@ func (r *Rainbow) Save(writer io.Writer) error {
 	if _, e := buf.Write(h.toBytes()); e != nil {
 		return e
 	}
+
+	// save nb of chains
+	binary.Write(buf, mode, uint64(len(r.chains)))
+
+	// save the chains
+	n := 0
 	for _, c := range r.chains {
-		for i := 0; i < r.cl; i++ {
-			if e := binary.Write(buf, mode, c.start); e != nil {
-				return e
-			}
-			if e := binary.Write(buf, mode, c.end); e != nil {
-				return e
-			}
+		if e := binary.Write(buf, mode, c.start); e != nil {
+			return e
+		}
+		if e := binary.Write(buf, mode, c.end); e != nil {
+			return e
+		}
+		n++
+		if n%1000 == 0 {
+			fmt.Println(n, "chains saved")
 		}
 	}
-	return buf.Flush()
+	e := buf.Flush()
+	fmt.Println(n, "chains saved")
+	fmt.Println("Saved ", h)
+	return e
 }
 
 // Load will load chains from the reader,
@@ -161,21 +167,44 @@ func (r *Rainbow) Load(reader io.Reader) error {
 		return e
 	}
 
+	fmt.Println("Loading ", hd)
+
+	// read nb of chains
+	var nb uint64
+	binary.Read(buf, mode, &nb)
 	// read chains
-	for nc := 0; nc < hd.nbChain; nc++ {
-		for i := 0; i < r.cl; i++ {
-			c := new(Chain)
-			if e := binary.Read(buf, mode, c.start); e != nil {
-				return e
-			}
-			if e := binary.Read(buf, mode, c.end); e != nil {
-				return e
-			}
-			r.AddChain(c)
+	var e error
+
+	for n := uint64(0); e == nil && n < nb; n++ {
+
+		start := make([]byte, r.hsize)
+		end := make([]byte, r.hsize)
+		if e = binary.Read(buf, mode, start); e != nil {
+			break
 		}
+		if e = binary.Read(buf, mode, end); e != nil {
+			break
+		}
+		c := new(Chain)
+		c.start = start
+		c.end = end
+		r.AddChain(c)
+		if (n+1)%1000 == 0 || e != nil {
+			fmt.Println(n+1, "chains loaded")
+		}
+	}
+
+	// test for abnormal errors ...
+	if e != io.EOF {
+		return e
+	}
+
+	if e != nil {
+		fmt.Println(nb, "chains loaded")
 	}
 
 	// Sort (and dedup) when finished loading.
 	r.SortChains()
+	// ignore normal eof
 	return nil
 }

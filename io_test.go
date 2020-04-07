@@ -1,9 +1,9 @@
 package rainbow
 
 import (
-	"bytes"
 	"crypto"
 	"fmt"
+	"os"
 	"testing"
 )
 
@@ -35,40 +35,58 @@ func TestHeader(t *testing.T) {
 }
 
 func TestSaveLoad(t *testing.T) {
+	fname := "testTable.rbw"
+	b, e := os.Create(fname)
+	if e != nil {
+		t.Fatal(e)
+	}
 
-	b := new(bytes.Buffer)
-
-	r := New(crypto.MD5, 2_000)
+	// SAVING
+	r := New(crypto.MD5, 20)
 	r.CompileAlphabet("abcdefgh", 2, 2).Build()
 	for i := 0; i < 5_000; i++ {
 		r.AddChain(r.NewChain())
 	}
-	fmt.Println("r unsorted : ", r.getHeader())
-	r.SortChains()
-	fmt.Println("r sorted : ", r.getHeader())
+	r.DedupChains()
+	fmt.Println(r.getHeader())
 
 	err := r.Save(b)
 	if err != nil {
 		t.Fatal(err)
 	}
+	b.Close()
 	fmt.Println("Saved ", r.getHeader())
 
-	rr := New(crypto.MD5, 2_000)
+	// LOADING
+	rr := New(crypto.MD5, 20)
 	rr.CompileAlphabet("abcdefgh", 2, 2).Build()
 
-	// clone buffer and load
-	bb := bytes.NewBuffer(b.Bytes())
-	err = rr.Load(bb)
+	b, e = os.Open(fname)
+	if e != nil {
+		t.Fatal(e)
+	}
+	defer b.Close()
+
+	err = rr.Load(b)
 	if err != nil {
 		t.Fatal(err)
 	}
 	fmt.Println("rr loaded : ", rr.getHeader())
 
-	// load original back
-	err = r.Load(b)
-	if err != nil {
-		t.Fatal(err)
+	// Detailled comparisons ...
+	if len(rr.chains) != len(r.chains) {
+		t.Fatalf("before dedup length do not match %d saved, but %d loaded", len(r.chains), len(rr.chains))
 	}
-	fmt.Println("original r (re)loaded : ", r.getHeader())
+	r.DedupChains()
+	rr.DedupChains()
+	if len(rr.chains) != len(r.chains) {
+		t.Fatalf("after dedup length do not match %d saved, but %d loaded", len(r.chains), len(rr.chains))
+	}
+
+	for i := range r.chains {
+		if !r.chains[i].Equal(r.chains[i]) {
+			t.Fatalf("chains # %d differ", i)
+		}
+	}
 
 }

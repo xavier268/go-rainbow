@@ -229,30 +229,31 @@ func (r *Rainbow) findChain(endHash []byte) (c *Chain, found bool) {
 	return nil, false
 }
 
-// dedupChains deduplicate identical chains.
-func (r *Rainbow) dedupChains() {
+// DedupChains deduplicate identical chains.
+// Heavy operation, needs to be triggered manually.
+func (r *Rainbow) DedupChains() {
 
-	panic("deprecated and not tested enough")
+	// dedup will potentially change order
+	r.sorted = false
 
-	/*
-		// only dedup when sorted
-		if !r.sorted {
-			r.SortChains()
-			return
-		}
+	fmt.Print("Dedup from ", len(r.chains))
 
-
-
-		// dedup, maintaining order
-		for i := 0; i < len(r.chains); i++ {
-			for j := i + 1; j < len(r.chains); j++ {
-				if r.chains[i].Equal(r.chains[j]) {
-					copy(r.chains[i:], r.chains[i+1:])
-					r.chains = r.chains[:len(r.chains)-1]
-					j--
-					break
-				}
+	// remove duplicates one by one
+	for i := 0; i < len(r.chains); i++ {
+		for j := i + 1; j < len(r.chains); j++ {
+			if r.chains[i].Equal(r.chains[j]) {
+				r.chains[i] = r.chains[len(r.chains)-1]
+				r.chains = r.chains[:len(r.chains)-1]
+				j--
+				i--
+				break
 			}
 		}
-	*/
+	}
+
+	fmt.Println(" to ", len(r.chains))
+
+	// sort back
+	r.SortChains()
+
 }

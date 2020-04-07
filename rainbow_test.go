@@ -171,3 +171,63 @@ func (r *Rainbow) getPHSample(c *Chain, level int) (p, h []byte) {
 	return p, h
 
 }
+
+func TestDedup1(t *testing.T) {
+
+	// create a rainbow table
+	r := New(crypto.MD5, 20)
+	r.CompileAlphabet("abcdefgh", 2, 2).Build()
+	for i := 0; i < 5_000; i++ {
+		r.AddChain(r.NewChain())
+	}
+	// ensure duplication
+	r.chains = append(r.chains, r.chains[200])
+
+	r.DedupChains()
+	if len(r.chains) != 5000 {
+		fmt.Println(r.getHeader())
+		fmt.Println("Nb of chains : ", len(r.chains))
+		t.Fatal("insufficinet deduplication")
+	}
+}
+func TestDedup100(t *testing.T) {
+
+	// create a rainbow table
+	r := New(crypto.MD5, 20)
+	r.CompileAlphabet("abcdefgh", 2, 2).Build()
+	for i := 0; i < 5_000; i++ {
+		r.AddChain(r.NewChain())
+	}
+	// ensure duplication
+	r.chains = append(r.chains, r.chains[200:300]...)
+
+	r.DedupChains()
+	if len(r.chains) != 5000 {
+		fmt.Println(r.getHeader())
+		fmt.Println("Nb of chains : ", len(r.chains))
+		t.Fatal("insufficinet deduplication")
+	}
+
+}
+
+func TestDedup150(t *testing.T) {
+
+	// create a rainbow table
+	r := New(crypto.MD5, 20)
+	r.CompileAlphabet("abcdefgh", 2, 2).Build()
+	for i := 0; i < 5_000; i++ {
+		r.AddChain(r.NewChain())
+	}
+	// ensure duplication and shuffle
+	r.chains = append(r.chains, r.chains[200:300]...)
+	r.chains = append(r.chains, r.chains[250:300]...)
+	r.chains[0], r.chains[250] = r.chains[250], r.chains[0]
+	r.chains[10], r.chains[1250] = r.chains[1250], r.chains[10]
+
+	r.DedupChains()
+	if len(r.chains) != 5000 {
+		fmt.Println(r.getHeader())
+		fmt.Println("Nb of chains : ", len(r.chains))
+		t.Fatal("insufficinet deduplication")
+	}
+}
