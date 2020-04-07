@@ -42,7 +42,7 @@ func TestSaveLoad(t *testing.T) {
 		t.Fatal(e)
 	}
 
-	// SAVING
+	// SAVING ============================
 	r := New(crypto.MD5, 20)
 	r.CompileAlphabet("abcdefgh", 2, 2).Build()
 	for i := 0; i < testNbChains; i++ {
@@ -57,7 +57,7 @@ func TestSaveLoad(t *testing.T) {
 	b.Close()
 	fmt.Println("Saved ", r.getHeader())
 
-	// LOADING
+	// LOADING ===========================
 	rr := New(crypto.MD5, 20)
 	rr.CompileAlphabet("abcdefgh", 2, 2).Build()
 
@@ -104,6 +104,4 @@ func TestSaveLoad(t *testing.T) {
 			t.Fatalf("chains # %d differ", i)
 		}
 	}
-	b.Close()
-
 }
