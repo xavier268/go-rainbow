@@ -8,7 +8,6 @@ import (
 	"errors"
 	"fmt"
 	"io"
-	"math/big"
 )
 
 // header for the files
@@ -83,7 +82,6 @@ func (r *Rainbow) getHeader() *header {
 	hd.major, hd.minor, _ = Version()
 	hd.chainLen = r.cl
 	hd.halgo = r.halgo
-	hd.used = r.used.String()
 	return hd
 }
 
@@ -105,9 +103,7 @@ func (r *Rainbow) checkHeader(hd *header) error {
 	if hd.halgo != r.halgo {
 		return errors.New("incorrect hash algorithm")
 	}
-	if u, ok := new(big.Int).SetString(hd.used, 10); !ok || u.Cmp(r.used) != 0 {
-		return errors.New("reduce signature are different")
-	}
+
 	return nil
 }
 

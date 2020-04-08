@@ -2,20 +2,19 @@ package rainbow
 
 import (
 	"bufio"
-	"math/bits"
 	"os"
 )
 
 // a rmodule define the intermediate step for the reduce function.
 type rmodule struct {
-	// a rmodule is provided a uint64 derived from the hash and the previous
-	// rmodules. It will extract from its decisions,
-	// thus modifying the byte array.
+	// a rmodule is provided a subslice from the hash and the previous
+	// rmodules. It will use it to make its decisions,
+	// thus modifying the password p byte array.
 	// It will try not to allocate,
 	// and therefore potentially modifying passed content.
-	run func(entropy uint64, p []byte) (pp []byte)
-	// number of bits needed by this module
-	bits int
+	run func(entropy, p []byte) (pp []byte)
+	// number of bytes of entropy expected by this module
+	bytes int
 }
 
 // buildReduce builds a new ReduceFunction from the RMBuilder.
@@ -28,14 +27,14 @@ func (r *Rainbow) buildReduce() ReduceFunction {
 		panic("cannot build : no rmodules were compiled yet")
 	}
 
-	ttlbits := 0
+	r.used = 0
 	for _, m := range r.rms {
-		ttlbits += m.bits
+		r.used += m.bytes
 	}
-	if ttlbits >= 8*r.hsize {
+
+	if r.used >= r.hsize {
 		panic("too many entropy required versus available hash size")
 	}
-	r.usedBits = ttlbits
 
 	r.built = true
 
@@ -43,70 +42,43 @@ func (r *Rainbow) buildReduce() ReduceFunction {
 
 		// merge the step into the hash
 		for i := range h {
-			switch i & 3 {
-			case 0:
-				h[i] ^= byte(step)
-			case 1:
-				h[i] ^= byte(19 * step)
-			case 2:
-				h[i] ^= byte(571 * step)
-			case 3:
-				h[i] ^= byte(1093 * step)
-			default:
-				panic("arithmetic internal error")
-			}
+			h[i] = byte(int(h[i]) + step*(i+1))
 		}
 
 		// reset password, keeping capacity
 		p = p[:0]
-		// bit index
+		// byte index
 		bi := 0
 
 		// apply the various rmodule
 		for _, m := range r.rms {
 
 			// extract needed entropy from current pointer
-			ent := extractEntropy(h, bi, bi+m.bits)
+			ent := extractEntropy(h, bi, bi+m.bytes)
 
 			// apply module
 			p = m.run(ent, p)
 
+			//fmt.Printf("Entropy before module %d= %d->%s\n", i, ent, string(p))
+
 			// refresh bit index
-			bi += m.bits
+			bi += m.bytes
 		}
 		// return the last password generated
 		return p
 	}
 }
 
-// extract 'nb' bits starting at the 'from' position,
+// extract 'nb' bytes starting at the 'from' position,
 // returning the corresponding uint64
-func extractEntropy(h []byte, from, nb int) uint64 {
-	if nb > 63 {
-		panic("trying to extract more than would fit in a uint64")
+func extractEntropy(h []byte, from, nb int) []byte {
+	if from+nb > len(h) {
+		panic("attempting to extract beyond h length")
 	}
-	if from+nb >= 8*len(h) {
-		panic("attempting to extract bits beyond input h length")
-	}
-	var acc, mask uint64
-	// first non aligned bits
-	if from%8 != 0 {
-		mask = 2<<(from%8) - 1
-		acc = uint64(h[from/8]) & mask
-	}
-	// aligned bits
-	for i := 1 + from/8; i < (from+nb)/8; i++ {
-		acc = acc<<8 + uint64(h[i])
-	}
-	if (from+nb)%8 != 0 {
-		// last non aligned bits
-		mask = 2<<((nb+from)%8) - 1
-		acc = acc<<8 + uint64(h[(nb+from)/8])&mask
-	}
-	return acc
+	return h[from : from+nb]
 }
 
-// CompileAlphabet will compile an alpbet of runes (a string).
+// CompileAlphabet will compile an alpbabet of runes (a string).
 // It will append to the password, ensuring lenghth
 // is between min(included) and max(included) runes.
 func (r *Rainbow) CompileAlphabet(alphabet string, min, max int) *Rainbow {
@@ -115,38 +87,38 @@ func (r *Rainbow) CompileAlphabet(alphabet string, min, max int) *Rainbow {
 		panic("invalid input parameters")
 	}
 
+	if max >= 15 {
+		panic("max should not exceed 15 letters")
+	}
+
 	// preprocess alphabet
 	alp := make([][]byte, 0, len(alphabet))
 	for _, r := range alphabet {
 		// ranging rune by rune ...
 		alp = append(alp, []byte(string(r)))
 	}
-	alpl := uint64(len(alp))
+
+	if len(alp) >= 255 {
+		panic("alphabet should not exceed 256 signs")
+	}
+
 	// create rmodule
 	mod := new(rmodule)
-	bb := uint64(1)
-	for i := 0; i < max; i++ {
-		bb *= alpl
-	}
-	mod.bits = bits.Len64(bb) + bits.Len64(uint64(max-min))
-
-	mod.run = func(ent uint64, p []byte) []byte {
-		var s int
-		var v uint64
+	mod.bytes = (max + 1) // 1 for the size and one per letter
+	mod.run = func(ent, p []byte) []byte {
+		var s, v int
 
 		// decide on the size, s
 		if max > min {
-			s = min + int(ent)%(max-min)
-			v = v >> bits.Len64(uint64(max-min))
+			s = min + int(ent[0])%(max-min+1)
 		} else {
 			s = min
 		}
 
 		// append values to p
 		for i := 0; i < s; i++ {
-			v = ent % alpl
+			v = int(ent[i+1]) % len(alp)
 			p = append(p, alp[v]...)
-			v = v / alpl
 		}
 		return p
 	}
@@ -157,35 +129,34 @@ func (r *Rainbow) CompileAlphabet(alphabet string, min, max int) *Rainbow {
 	return r
 }
 
-// CompileTransform compile the password transfarmation, with provided probability.
-// 0.0 - means never, and 1.0 means always.
-func (r *Rainbow) CompileTransform(trf func(p []byte) []byte, probability float64) *Rainbow {
-	if probability < 0 || probability > 1 {
-		panic("probability needs to be between 0.0 and 1.0")
-	}
-	if trf == nil {
-		panic("transformation fonction must be provided, cannot be nul")
+// CompileTransform compile the password transfarmation, selecting one among all transformation.
+// One or more alternative can be nil.
+func (r *Rainbow) CompileTransform(trf ...func(p []byte) []byte) *Rainbow {
+
+	if len(trf) > 255 {
+		panic("too many alternative transformation provided - max 255")
 	}
 
-	var pp []byte
-	var prob = probability
+	if len(trf) == 0 {
+		panic("there should be at least one transformation, possibly nil")
+	}
 
 	mod := new(rmodule)
 
-	mod.bits = 1 // shift only by 1 bit for each choice
-	mod.run = func(ent uint64, p []byte) []byte {
-		// decide on probability
-		v := float64(ent%1000) / 1000. // precision is 0.1% probability
+	mod.bytes = 1
+	mod.run = func(ent, p []byte) []byte {
+		// decide on transformation to use
+		v := int(ent[0]) % len(trf)
 
-		if v < prob {
-			pp = trf(p)
-			return pp
+		// transform if selection is not nil
+		if trf[v] != nil {
+			p = trf[v](p)
 		}
 		// else, do nothing
 		return p
 	}
 
-	// add the module, that would call trf
+	// add the module
 	r.rms = append(r.rms, mod)
 
 	return r
@@ -215,12 +186,24 @@ func (r *Rainbow) CompileWordList(fName string) *Rainbow {
 	}
 
 	mod := new(rmodule)
-	mod.bits = bits.Len64(uint64(len(words)))
+	sz := 1
+	mod.bytes = 1
+	for {
+		mod.bytes++
+		sz *= 256
+		if sz > len(words) {
+			break
+		}
+	}
 
-	mod.run = func(ent uint64, p []byte) []byte {
+	mod.run = func(ent, p []byte) []byte {
 
 		// Select the word
-		v := ent % uint64(len(words))
+		var v uint64
+		for _, e := range ent {
+			v = 256*v + uint64(e)
+		}
+		v = v % uint64(len(words))
 
 		// append selected word
 		p = append(p, words[v]...)

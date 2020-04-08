@@ -160,5 +160,11 @@ Targeted benefits are :
     Demo runs in 120s on my machine
 
 #### v0.5
-    Homogeneous reducers
-    Redesigned not to use big.Int during run (ok at compile time).
+    New reducer architecture
+    Removed obsolete reducers
+    Redesigned to avoid using big.Int during runtime (ok while compiling).
+    
+#### v0.6
+    Changed CompileTransformation API
+    Changed entropy generation
+    Demo now runs in 52s (same machine).

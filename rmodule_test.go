@@ -11,24 +11,28 @@ import (
 func TestRBuilder1(t *testing.T) {
 	min, max := 2, 5
 	red := New(crypto.MD5, 10).CompileAlphabet("Aéi", min, max).buildReduce()
-	p, h := []byte{}, []byte{2, 5, 12, 6, 54, 44, 55, 89, 7, 65, 46, 5, 4}
+	p, h := []byte{}, make([]byte, 15)
+	rd := rand.New(rand.NewSource(42))
 	results := make(map[string]int)
 	for i := 0; i < 10_000; i++ {
+		rd.Read(h)
 		p = red(i, h, p)
 		results[string(p)]++
 	}
 	if len(results) != 3*3+3*3*3+3*3*3*3+3*3*3*3*3 { // 360
 		fmt.Printf("min %d max %d results len %d\n%+v\n", min, max, len(results), results)
-		t.Fatal("unexpected result length")
+		t.Fatal("unexpected result length distributon")
 	}
 }
 
 func TestRBuilder2(t *testing.T) {
 	min, max := 3, 3
 	red := New(crypto.MD5, 10).CompileAlphabet("aécd", min, max).buildReduce()
-	p, h := []byte{}, []byte{2, 5, 12, 6, 54, 44, 55, 89, 7, 65, 46, 5, 4}
+	p, h := []byte{}, make([]byte, 15)
+	rd := rand.New(rand.NewSource(42))
 	results := make(map[string]int)
 	for i := 0; i < 10_000; i++ {
+		rd.Read(h)
 		p = red(i, h, p)
 		results[string(p)]++
 	}
@@ -81,7 +85,7 @@ func TestVisualCompileTransform(t *testing.T) {
 
 	r := New(crypto.MD5, 10).
 		CompileWordList("words_test.txt").
-		CompileTransform(trf, 1./3.).
+		CompileTransform(trf, nil, nil).
 		Build()
 
 	n := 1000

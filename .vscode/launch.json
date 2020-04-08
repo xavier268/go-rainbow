@@ -5,6 +5,17 @@
     "version": "0.2.0",
     "configurations": [
         {
+            "name": "Launch test function RBuilder1",
+            "type": "go",
+            "request": "launch",
+            "mode": "test",
+            "program": "${workspaceFolder}",
+            "args": [
+                "-test.run",
+                "RBuilder1"
+            ]
+        },
+        {
             "name": "Launch",
             "type": "go",
             "request": "launch",

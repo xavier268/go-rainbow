@@ -4,7 +4,6 @@ import (
 	"bytes"
 	"crypto"
 	"fmt"
-	"math/big"
 	"math/rand"
 	"sort"
 	"time"
@@ -12,7 +11,7 @@ import (
 
 // Version of the package
 func Version() (major, minor, sub int) {
-	return 0, 4, 1
+	return 0, 6, 0
 }
 
 // VersionString for human consumption
@@ -33,8 +32,8 @@ type Rainbow struct {
 	// rf is a reduce function, from hash to password
 	// It conforms to the hash.Hash interface.
 	rf ReduceFunction
-	// number of bits of entropy consumed by the reduce function
-	usedBits int
+	// number of bytes of entropy consumed by the reduce function
+	used int
 
 	// cl is the chain length (constant)
 	cl int
@@ -50,8 +49,6 @@ type Rainbow struct {
 	rms []*rmodule
 	// flag : you can build only once.
 	built bool
-	// cumulative size of the big.Int that will be used
-	used *big.Int
 }
 
 // New constructs a new, empty rainbow table,
@@ -66,9 +63,6 @@ func New(hashAlgo crypto.Hash, chainLength int) *Rainbow {
 	r.cl = chainLength
 	// set random generator
 	r.rand = rand.New(rand.NewSource(time.Now().UnixNano()))
-
-	// Used so far by the modules
-	r.used = new(big.Int).SetInt64(1)
 
 	return r
 }
@@ -119,21 +113,11 @@ func (r *Rainbow) NewChain() *Chain {
 	return c
 }
 
-// BitLen provides the number of bits needed to encode the namespace.
-func (r *Rainbow) BitLen() int {
-	return r.used.BitLen()
-}
-
 // Build finish compiling the Rainbow table "reduce" function.
 func (r *Rainbow) Build() *Rainbow {
 
 	if r.rf != nil {
 		panic("a reduce function was already defined, you cannot redefine it")
-	}
-
-	// check reduce name space cardinality
-	if r.used.BitLen() > 8*r.hsize {
-		panic("the full reduced name space is larger than the hash space")
 	}
 
 	// update the reduce function
