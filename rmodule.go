@@ -6,10 +6,10 @@ import (
 	"os"
 )
 
-// a rmodule accptets a big.Int derived from the hash and the previous
-// rmodules. It will extract from it (DivMod) a decision, act on the decision,
-// thus modifying both the previous hash and the byte array.
-// It wil return both values, trying not to allocate,
+// a rmodule is provided a uint64 derived from the hash and the previous
+// rmodules. It will extract from its decisions,
+// thus modifying the byte array.
+// It will try not to allocate,
 // and therefore potentially modifying passed content.
 type rmodule func(b *big.Int, p []byte) (bb *big.Int, pp []byte)
 

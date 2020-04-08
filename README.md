@@ -151,3 +151,14 @@ Targeted benefits are :
 * rule-driven ( word lists and mangling ) to limit the scope of searches to likely passwords, enabling longer passwords in exchange for shorter unlikely ones,
 * weighting mecanisms to prioritize encoding (and search success) of most likely passwords (tbd ?)
 * no (practical) password length limits ( but of course, provided rules are restrictive enough ... the name space cannot exceed the total number of hash values !)
+
+## Change log
+
+#### v0.4
+    First somewhat stable version, tested.
+    Multiple reducers coexists
+    Demo runs in 120s on my machine
+
+#### v0.5
+    Homogeneous reducers
+    Redesigned not to use big.Int during run (ok at compile time).

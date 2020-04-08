@@ -1,6 +1,8 @@
 package rainbow
 
-import "math/big"
+// OBSOLETE AND DEPRECATED
+
+/*
 
 // getAlphaReduceFunc creates a ReduceFunction that generates
 // alphabetic lowercases passwords of the exact specified length,
@@ -74,3 +76,5 @@ func GetBaseReduceFunc() ReduceFunction {
 		return pp
 	}
 }
+
+*/

@@ -1,12 +1,6 @@
 package rainbow
 
-import (
-	"bytes"
-	"fmt"
-	"strings"
-	"testing"
-)
-
+/*
 func TestAlphaReduce(t *testing.T) {
 	n := 12
 	r := getAlphaReduceFunc(n)
@@ -118,3 +112,5 @@ func benchmarkAlphaReduce(nbChar int, b *testing.B) {
 		h = red(i, h, h)
 	}
 }
+
+*/

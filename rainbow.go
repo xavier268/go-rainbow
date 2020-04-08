@@ -11,14 +11,14 @@ import (
 )
 
 // Version of the package
-func Version() (major, minor int) {
-	return 0, 4
+func Version() (major, minor, sub int) {
+	return 0, 4, 1
 }
 
 // VersionString for human consumption
 func VersionString() string {
-	M, m := Version()
-	return fmt.Sprintf("version_%d.%d", M, m)
+	M, m, s := Version()
+	return fmt.Sprintf("version_%d.%d.%d", M, m, s)
 }
 
 // Rainbow is the main type to generate tables or lookup a password.

@@ -80,7 +80,7 @@ func (hd *header) fromBytes(data []byte) *header {
 func (r *Rainbow) getHeader() *header {
 	hd := new(header)
 	hd.magic = "go-rainbow"
-	hd.major, hd.minor = Version()
+	hd.major, hd.minor, _ = Version()
 	hd.chainLen = r.cl
 	hd.halgo = r.halgo
 	hd.used = r.used.String()
@@ -92,7 +92,7 @@ func (r *Rainbow) checkHeader(hd *header) error {
 	if string(hd.magic[:]) != "go-rainbow" {
 		return errors.New("invalid file type")
 	}
-	M, m := Version()
+	M, m, _ := Version()
 	if M != hd.major {
 		return fmt.Errorf("current program version (%d) does not match file version (%d)", M, hd.major)
 	}
