@@ -15,6 +15,12 @@ func Version() (major, minor int) {
 	return 0, 4
 }
 
+// VersionString for human consumption
+func VersionString() string {
+	M, m := Version()
+	return fmt.Sprintf("version_%d.%d", M, m)
+}
+
 // Rainbow is the main type to generate tables or lookup a password.
 type Rainbow struct {
 	// hashing algorithm

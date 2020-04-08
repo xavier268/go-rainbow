@@ -79,6 +79,15 @@ func TestChainsBasic10(t *testing.T) {
 }
 
 // ============================= benchmarks =============================
+
+func BenchmarkAddChainWithAlphabet(b *testing.B) {
+	r := New(crypto.MD5, 100).
+		CompileAlphabet("abcdefghijklmnopqrstuvwxyz", 0, 16).
+		Build()
+	b.ResetTimer()
+	r.benchmarkAddChain(b)
+}
+
 func BenchmarkAddChain1_000(b *testing.B) {
 	r := getTestRainbow(1_000)
 	b.ResetTimer()
@@ -120,6 +129,8 @@ func BenchmarkLookup500x200(b *testing.B) {
 	r := getTestRainbow(500)  // chain length
 	r.benchmarkLookup(200, b) // nb of chains
 }
+
+// ----------------------------------------------------------
 
 // run a benchmark, adding chains to the  Rainbow object.
 func (r *Rainbow) benchmarkAddChain(b *testing.B) {
