@@ -2,16 +2,21 @@ package rainbow
 
 import (
 	"bufio"
-	"math/big"
+	"math/bits"
 	"os"
 )
 
-// a rmodule is provided a uint64 derived from the hash and the previous
-// rmodules. It will extract from its decisions,
-// thus modifying the byte array.
-// It will try not to allocate,
-// and therefore potentially modifying passed content.
-type rmodule func(b *big.Int, p []byte) (bb *big.Int, pp []byte)
+// a rmodule define the intermediate step for the reduce function.
+type rmodule struct {
+	// a rmodule is provided a uint64 derived from the hash and the previous
+	// rmodules. It will extract from its decisions,
+	// thus modifying the byte array.
+	// It will try not to allocate,
+	// and therefore potentially modifying passed content.
+	run func(entropy uint64, p []byte) (pp []byte)
+	// number of bits needed by this module
+	bits int
+}
 
 // buildReduce builds a new ReduceFunction from the RMBuilder.
 // Will be called by the Rainbow Build, not to be called directly.
@@ -20,32 +25,85 @@ func (r *Rainbow) buildReduce() ReduceFunction {
 		panic("build was already called")
 	}
 	if len(r.rms) == 0 {
-		panic("cannot build : not rmodules were compiled yet")
+		panic("cannot build : no rmodules were compiled yet")
 	}
-	r.built = true
 
-	// allocate initial capacity outside ReduceFunction
-	var buf [64]byte
-	bi := (&big.Int{}).SetBytes(buf[:])
-	st := (&big.Int{})
+	ttlbits := 0
+	for _, m := range r.rms {
+		ttlbits += m.bits
+	}
+	if ttlbits >= 8*r.hsize {
+		panic("too many entropy required versus available hash size")
+	}
+	r.usedBits = ttlbits
+
+	r.built = true
 
 	return func(step int, h, p []byte) []byte {
 
-		// prepare bi, handling the step
-		st.SetInt64(int64(step))
-		bi.SetBytes(h)
-		bi.Add(bi, st)
+		// merge the step into the hash
+		for i := range h {
+			switch i & 3 {
+			case 0:
+				h[i] ^= byte(step)
+			case 1:
+				h[i] ^= byte(19 * step)
+			case 2:
+				h[i] ^= byte(571 * step)
+			case 3:
+				h[i] ^= byte(1093 * step)
+			default:
+				panic("arithmetic internal error")
+			}
+		}
 
 		// reset password, keeping capacity
 		p = p[:0]
+		// bit index
+		bi := 0
 
 		// apply the various rmodule
-		for _, f := range r.rms {
-			bi, p = f(bi, p)
+		for _, m := range r.rms {
+
+			// extract needed entropy from current pointer
+			ent := extractEntropy(h, bi, bi+m.bits)
+
+			// apply module
+			p = m.run(ent, p)
+
+			// refresh bit index
+			bi += m.bits
 		}
 		// return the last password generated
 		return p
 	}
+}
+
+// extract 'nb' bits starting at the 'from' position,
+// returning the corresponding uint64
+func extractEntropy(h []byte, from, nb int) uint64 {
+	if nb > 63 {
+		panic("trying to extract more than would fit in a uint64")
+	}
+	if from+nb >= 8*len(h) {
+		panic("attempting to extract bits beyond input h length")
+	}
+	var acc, mask uint64
+	// first non aligned bits
+	if from%8 != 0 {
+		mask = 2<<(from%8) - 1
+		acc = uint64(h[from/8]) & mask
+	}
+	// aligned bits
+	for i := 1 + from/8; i < (from+nb)/8; i++ {
+		acc = acc<<8 + uint64(h[i])
+	}
+	if (from+nb)%8 != 0 {
+		// last non aligned bits
+		mask = 2<<((nb+from)%8) - 1
+		acc = acc<<8 + uint64(h[(nb+from)/8])&mask
+	}
+	return acc
 }
 
 // CompileAlphabet will compile an alpbet of runes (a string).
@@ -57,44 +115,44 @@ func (r *Rainbow) CompileAlphabet(alphabet string, min, max int) *Rainbow {
 		panic("invalid input parameters")
 	}
 
-	// prepocess alphabet
+	// preprocess alphabet
 	alp := make([][]byte, 0, len(alphabet))
 	for _, r := range alphabet {
 		// ranging rune by rune ...
 		alp = append(alp, []byte(string(r)))
 	}
-
-	// allocate memory and "constants"
-	buf := new(big.Int).SetInt64(10000)
-	ns := new(big.Int).SetInt64(int64(max - min + 1)) // size choice
-	n := new(big.Int).SetInt64(int64(len(alp)))       // letter choice
-
-	// update used capacity (approx)
-	r.used.Mul(r.used, ns)
+	alpl := uint64(len(alp))
+	// create rmodule
+	mod := new(rmodule)
+	bb := uint64(1)
 	for i := 0; i < max; i++ {
-		r.used.Mul(r.used, n)
+		bb *= alpl
+	}
+	mod.bits = bits.Len64(bb) + bits.Len64(uint64(max-min))
+
+	mod.run = func(ent uint64, p []byte) []byte {
+		var s int
+		var v uint64
+
+		// decide on the size, s
+		if max > min {
+			s = min + int(ent)%(max-min)
+			v = v >> bits.Len64(uint64(max-min))
+		} else {
+			s = min
+		}
+
+		// append values to p
+		for i := 0; i < s; i++ {
+			v = ent % alpl
+			p = append(p, alp[v]...)
+			v = v / alpl
+		}
+		return p
 	}
 
 	// append the rmodule
-	r.rms = append(r.rms,
-		func(b *big.Int, p []byte) (*big.Int, []byte) {
-			var v, s int
-
-			// decide on the size
-			b, v = extract(b, ns, buf)
-			// TODO - adjust calculation to ensure a better distribution.
-			// Currently, too many smaller since probability is the same
-			// for the full size group.
-			// Smaller size should be selected less often ?
-			// A distribution fonction should be provided ?
-			s = v + min
-			// ensure minimum values are set
-			for i := 0; i < s; i++ {
-				b, v = extract(b, n, buf)
-				p = append(p, alp[v]...)
-			}
-			return b, p
-		})
+	r.rms = append(r.rms, mod)
 
 	return r
 }
@@ -110,29 +168,26 @@ func (r *Rainbow) CompileTransform(trf func(p []byte) []byte, probability float6
 	}
 
 	var pp []byte
-	buf := new(big.Int)
 	var prob = probability
 
-	// Update used capacity
-	r.used.Mul(r.used, new(big.Int).SetInt64(2))
+	mod := new(rmodule)
+
+	mod.bits = 1 // shift only by 1 bit for each choice
+	mod.run = func(ent uint64, p []byte) []byte {
+		// decide on probability
+		v := float64(ent%1000) / 1000. // precision is 0.1% probability
+
+		if v < prob {
+			pp = trf(p)
+			return pp
+		}
+		// else, do nothing
+		return p
+	}
 
 	// add the module, that would call trf
-	r.rms = append(r.rms,
-		func(b *big.Int, p []byte) (*big.Int, []byte) {
-			// decide on probability
-			v := extractf(b, buf)
-			b = b.Rsh(b, 1) // Shift right by one, consuming b
+	r.rms = append(r.rms, mod)
 
-			// DEBUG
-			// fmt.Print("\t ", v, "\t")
-
-			if v < prob {
-				pp = trf(p)
-				return b, pp
-			}
-			// else, do nothing
-			return b, p
-		})
 	return r
 
 }
@@ -159,30 +214,28 @@ func (r *Rainbow) CompileWordList(fName string) *Rainbow {
 		words = append(words, scanner.Bytes())
 	}
 
-	// allocate memory and "constants"
-	buf := new(big.Int).SetInt64(10000)
-	nbw := new(big.Int).SetInt64(int64(len(words)))
+	mod := new(rmodule)
+	mod.bits = bits.Len64(uint64(len(words)))
 
-	// update capacity used
-	r.used.Mul(r.used, nbw)
+	mod.run = func(ent uint64, p []byte) []byte {
+
+		// Select the word
+		v := ent % uint64(len(words))
+
+		// append selected word
+		p = append(p, words[v]...)
+
+		// return
+		return p
+	}
 
 	// append the module
-	r.rms = append(r.rms,
-		func(b *big.Int, p []byte) (*big.Int, []byte) {
-			var v int
-			// Select the word
-			b, v = extract(b, nbw, buf)
-
-			// append selected word
-			p = append(p, words[v]...)
-
-			// return
-			return b, p
-		})
+	r.rms = append(r.rms, mod)
 
 	return r
 }
 
+/* DEPRECATED
 // extract from a big int a value from 0 to (n-1),
 // returning the new big.Int and the extracted value.
 // v is a big.Int passed to hold v, and avoid allocation.
@@ -207,3 +260,5 @@ func extractf(b *big.Int, buf *big.Int) float64 {
 	buf = buf.Mod(buf, largeConstantAsBig)
 	return float64(buf.Int64()) / float64(largeConstant)
 }
+
+*/

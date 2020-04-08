@@ -18,6 +18,11 @@ func TestChecks(t *testing.T) {
 		t.Fatal("int to byte conversion error")
 	}
 
+	i := 256*17 + 5
+	if byte(5) != byte(i) {
+		t.Fatal("byte truncating not behaving as expected")
+	}
+
 	// crypto engines
 
 	if !crypto.MD5.Available() {

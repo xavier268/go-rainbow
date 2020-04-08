@@ -33,6 +33,8 @@ type Rainbow struct {
 	// rf is a reduce function, from hash to password
 	// It conforms to the hash.Hash interface.
 	rf ReduceFunction
+	// number of bits of entropy consumed by the reduce function
+	usedBits int
 
 	// cl is the chain length (constant)
 	cl int
@@ -45,7 +47,7 @@ type Rainbow struct {
 	sorted bool
 
 	// The modules used to build the reduce name space
-	rms []rmodule
+	rms []*rmodule
 	// flag : you can build only once.
 	built bool
 	// cumulative size of the big.Int that will be used

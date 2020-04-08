@@ -3,30 +3,10 @@ package rainbow
 import (
 	"crypto"
 	"fmt"
-	"math"
-	"math/big"
 	"math/rand"
 	"strings"
 	"testing"
 )
-
-func TestExtract(t *testing.T) {
-
-	bb := new(big.Int).SetInt64(62)
-	n := new(big.Int).SetInt64(3)
-	v := new(big.Int)
-	vv := 0
-
-	bb, vv = extract(bb, n, v)
-	if vv != 1 && bb.Cmp(new(big.Int).SetInt64(20)) != 0 {
-		t.FailNow()
-	}
-
-	bb, vv = extract(bb, n, v)
-	if vv != 2 && bb.Cmp(new(big.Int).SetInt64(6)) != 0 {
-		t.FailNow()
-	}
-}
 
 func TestRBuilder1(t *testing.T) {
 	min, max := 2, 5
@@ -73,58 +53,6 @@ func BenchmarkRBuilderAlphabet(b *testing.B) {
 		p = red(i, h, p)
 	}
 
-}
-
-func TestExtractf(t *testing.T) {
-	r := New(crypto.MD5, 10)
-
-	buf := new(big.Int)
-	var v, s, ss float64
-	n := 1_000_000.
-	for i := 0.; i < n; i++ {
-		b := new(big.Int).Rand(r.rand, largeConstantAsBig)
-		v = extractf(b, buf)
-		s += v
-		ss += v * v
-	}
-	s = s / n
-	ss = ss/n - s*s
-	if math.Abs(s-0.5) > 0.01 || math.Abs(ss-1./12.) > 0.001 {
-		fmt.Printf("Mean  : %f\t expected : %f\nVariance : %f\t expected : %f\n", s, 0.5, ss, 1./12.)
-		t.Fatal("unrealistic mean or variance")
-	}
-}
-
-func BenchmarkExtractf(b *testing.B) {
-	r := New(crypto.MD5, 10)
-
-	buf := new(big.Int)
-	var v float64
-	bb := new(big.Int).Rand(r.rand, new(big.Int).SetInt64(10000))
-	b.ResetTimer()
-	for i := 0; i < b.N; i++ {
-		v = extractf(bb, buf)
-	}
-	if v == 0 {
-	}
-}
-
-func BenchmarkExtract(b *testing.B) {
-	r := New(crypto.MD5, 10)
-
-	buf := new(big.Int)
-	var v int
-	bb := new(big.Int).Rand(r.rand, new(big.Int).SetInt64(3213213131313131331))
-	bbb := new(big.Int).Set(bb)
-	vv := new(big.Int).Set(bb)
-	b.ResetTimer()
-	for i := 0; i < b.N; i++ {
-		bb.Set(bb)
-		buf.Set(bb)
-		buf, v = extract(bbb, buf, vv)
-	}
-	if v == 0 {
-	}
 }
 
 func TestVisualCompileWords(t *testing.T) {
