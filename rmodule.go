@@ -2,6 +2,7 @@ package rainbow
 
 import (
 	"bufio"
+	"fmt"
 	"os"
 )
 
@@ -15,6 +16,8 @@ type rmodule struct {
 	run func(entropy, p []byte) (pp []byte)
 	// number of bytes of entropy expected by this module
 	bytes int
+	// signature of the rmodule
+	signature string
 }
 
 // buildReduce builds a new ReduceFunction from the RMBuilder.
@@ -30,6 +33,7 @@ func (r *Rainbow) buildReduce() ReduceFunction {
 	r.used = 0
 	for _, m := range r.rms {
 		r.used += m.bytes
+		r.signature = m.signature + "\n"
 	}
 
 	if r.used >= r.hsize {
@@ -104,6 +108,7 @@ func (r *Rainbow) CompileAlphabet(alphabet string, min, max int) *Rainbow {
 
 	// create rmodule
 	mod := new(rmodule)
+	mod.signature = fmt.Sprintf("CompileAlphabet with alphabet : %v, min:%d, max%d\n", alphabet, min, max)
 	mod.bytes = (max + 1) // 1 for the size and one per letter
 	mod.run = func(ent, p []byte) []byte {
 		var s, v int
@@ -142,6 +147,7 @@ func (r *Rainbow) CompileTransform(trf ...func(p []byte) []byte) *Rainbow {
 	}
 
 	mod := new(rmodule)
+	mod.signature = fmt.Sprintf("CompileTransform with %d transformations", len(trf))
 
 	mod.bytes = 1
 	mod.run = func(ent, p []byte) []byte {
@@ -186,6 +192,7 @@ func (r *Rainbow) CompileWordList(fName string) *Rainbow {
 	}
 
 	mod := new(rmodule)
+	mod.signature = fmt.Sprintf("CompileWordList with %d words", len(words))
 	sz := 1
 	mod.bytes = 1
 	for {

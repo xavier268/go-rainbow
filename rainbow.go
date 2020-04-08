@@ -11,7 +11,7 @@ import (
 
 // Version of the package
 func Version() (major, minor, sub int) {
-	return 0, 6, 0
+	return 0, 6, 1
 }
 
 // VersionString for human consumption
@@ -22,6 +22,8 @@ func VersionString() string {
 
 // Rainbow is the main type to generate tables or lookup a password.
 type Rainbow struct {
+	// a human readable signature of the configuration
+	signature string
 	// hashing algorithm
 	halgo crypto.Hash
 	// hf is the Hash function used to compute from password to hash
@@ -120,8 +122,13 @@ func (r *Rainbow) Build() *Rainbow {
 		panic("a reduce function was already defined, you cannot redefine it")
 	}
 
+	r.signature = fmt.Sprintf("go-rainbow %s\nchain length %d\nhash algorithm : %d\n",
+		VersionString(), r.cl, r.halgo)
+
 	// update the reduce function
 	r.rf = r.buildReduce()
+
+	r.signature += fmt.Sprintf("used bytes %d", r.used)
 
 	return r
 }

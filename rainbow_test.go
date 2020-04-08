@@ -197,7 +197,7 @@ func TestDedup1(t *testing.T) {
 
 	r.DedupChains()
 	if len(r.chains) != 5000 {
-		fmt.Println(r.getHeader())
+		fmt.Println(r.signature)
 		fmt.Println("Nb of chains : ", len(r.chains))
 		t.Fatal("insufficinet deduplication")
 	}
@@ -215,7 +215,7 @@ func TestDedup100(t *testing.T) {
 
 	r.DedupChains()
 	if len(r.chains) != 5000 {
-		fmt.Println(r.getHeader())
+		fmt.Println(r.signature)
 		fmt.Println("Nb of chains : ", len(r.chains))
 		t.Fatal("insufficinet deduplication")
 	}
@@ -238,7 +238,7 @@ func TestDedup150(t *testing.T) {
 
 	r.DedupChains()
 	if len(r.chains) != 5000 {
-		fmt.Println(r.getHeader())
+		fmt.Println(r.signature)
 		fmt.Println("Nb of chains : ", len(r.chains))
 		t.Fatal("insufficinet deduplication")
 	}

@@ -168,3 +168,6 @@ Targeted benefits are :
     Changed CompileTransformation API
     Changed entropy generation
     Demo now runs in 52s (same machine).
+
+#### v0.6.1
+    Added human readable configuration signature
