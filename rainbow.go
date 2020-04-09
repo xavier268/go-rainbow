@@ -11,7 +11,7 @@ import (
 
 // Version of the package
 func Version() (major, minor, sub int) {
-	return 0, 6, 2
+	return 0, 6, 3
 }
 
 // VersionString for human consumption
@@ -65,6 +65,7 @@ func New(hashAlgo crypto.Hash, chainLength int) *Rainbow {
 	r.cl = chainLength
 	// set random generator
 	r.rand = rand.New(rand.NewSource(time.Now().UnixNano()))
+	r.signature = "Nothing compiled yet"
 
 	return r
 }
@@ -122,13 +123,8 @@ func (r *Rainbow) Build() *Rainbow {
 		panic("a reduce function was already defined, you cannot redefine it")
 	}
 
-	r.signature = fmt.Sprintf("go-rainbow %s\nchain length %d\nhash algorithm : %d\n",
-		VersionString(), r.cl, r.halgo)
-
 	// update the reduce function
 	r.rf = r.buildReduce()
-
-	r.signature += fmt.Sprintf("used bytes %d", r.used)
 
 	return r
 }

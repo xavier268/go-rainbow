@@ -30,13 +30,16 @@ func (r *Rainbow) buildReduce() ReduceFunction {
 		panic("cannot build : no rmodules were compiled yet")
 	}
 
+	r.signature = fmt.Sprintf("go-rainbow %s\nchain length %d\nhash algorithm %d\n",
+		VersionString(), r.cl, r.halgo)
 	r.used = 0
 	for _, m := range r.rms {
 		r.used += m.bytes
-		r.signature = m.signature + "\n"
+		r.signature += m.signature + "\n"
 	}
 
 	r.built = true
+	r.signature += fmt.Sprintf("used bytes %d\n", r.used)
 
 	return func(step int, h, p []byte) []byte {
 
