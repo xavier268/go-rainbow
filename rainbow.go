@@ -142,7 +142,7 @@ func (r *Rainbow) AddChain(c ...*Chain) {
 
 // SortChains will ensure Chains are sorted for Lookup.
 // Sort by increasing byte order of chain.End.
-// It also dedup chains.
+// It does not automatically dedup chains.
 func (r *Rainbow) SortChains() {
 	if r.sorted {
 		return
@@ -249,6 +249,7 @@ func (r *Rainbow) findChain(endHash []byte) (from, to int, found bool) {
 
 // DedupChains deduplicate identical chains.
 // Heavy operation, needs to be triggered manually.
+// Chains are sorted.
 func (r *Rainbow) DedupChains() {
 
 	// dedup will potentially change order
