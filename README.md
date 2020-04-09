@@ -155,7 +155,7 @@ Targeted benefits are :
 #### v0.4
     First somewhat stable version, tested.
     Multiple reducers coexists
-    Demo runs in 120s on my machine
+    Demo runs in 120s
 
 #### v0.5
     New reducer architecture
@@ -169,3 +169,7 @@ Targeted benefits are :
 
 #### v0.6.1
     Added human readable configuration signature
+
+#### v0.6.2
+    Removed size limits on name space, autoextending if needed
+    Demo now runs in 53s (out of which reduce is 26s and md5 is 21s)

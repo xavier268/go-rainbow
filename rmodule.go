@@ -36,13 +36,20 @@ func (r *Rainbow) buildReduce() ReduceFunction {
 		r.signature = m.signature + "\n"
 	}
 
+	/* // AUTO EXTEND hash data
 	if r.used >= r.hsize {
 		panic("too many entropy required versus available hash size")
 	}
+	*/
 
 	r.built = true
 
 	return func(step int, h, p []byte) []byte {
+
+		// autoextend hash size
+		for r.used > len(h) {
+			h = append(h, h...)
+		}
 
 		// merge the step into the hash
 		for i := range h {
@@ -77,6 +84,7 @@ func (r *Rainbow) buildReduce() ReduceFunction {
 // returning the corresponding uint64
 func extractEntropy(h []byte, from, nb int) []byte {
 	if from+nb > len(h) {
+		// should not happen (auto extension of h)
 		panic("attempting to extract beyond h length")
 	}
 	return h[from : from+nb]
@@ -89,10 +97,6 @@ func (r *Rainbow) CompileAlphabet(alphabet string, min, max int) *Rainbow {
 
 	if len(alphabet) == 0 || max < min || max <= 0 || min < 0 {
 		panic("invalid input parameters")
-	}
-
-	if max >= 15 {
-		panic("max should not exceed 15 letters")
 	}
 
 	// preprocess alphabet

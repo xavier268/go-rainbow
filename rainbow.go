@@ -11,7 +11,7 @@ import (
 
 // Version of the package
 func Version() (major, minor, sub int) {
-	return 0, 6, 1
+	return 0, 6, 2
 }
 
 // VersionString for human consumption

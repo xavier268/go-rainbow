@@ -41,6 +41,24 @@ func TestRBuilder2(t *testing.T) {
 		t.Fatal("unexpected result length")
 	}
 }
+func TestRBuilder3AutoExtend(t *testing.T) {
+	min, max := 3, 200
+	red := New(crypto.MD5, 10).CompileAlphabet("abc", min, max).buildReduce()
+	p, h := []byte{}, make([]byte, 15)
+	rd := rand.New(rand.NewSource(42))
+	results := make(map[string]int)
+	for i := 0; i < 100; i++ {
+		rd.Read(h)
+		p = red(i, h, p)
+		results[string(p)]++
+	}
+
+	if len(results) < 100 {
+		fmt.Println("autoextended : ", len(results), results)
+		fmt.Printf("min %d max %d results len %d\n", min, max, len(results))
+		t.Fatal("unexpected collisions")
+	}
+}
 
 func BenchmarkRBuilderAlphabet(b *testing.B) {
 	min, max := 7, 12
