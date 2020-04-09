@@ -175,3 +175,7 @@ Targeted benefits are :
 #### v0.6.2
     Removed size limits on name space, autoextending if needed
     Demo now runs in 53s (out of which reduce is 26s and md5 is 21s)
+
+#### v0.6.3
+    Fixed signature bug
+    Demo still runs in 53s.
