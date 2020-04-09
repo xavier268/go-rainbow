@@ -23,10 +23,9 @@ func main() {
 	dir := filepath.Join("prof", rainbow.VersionString())
 	os.MkdirAll(dir, os.ModeDir+os.ModePerm)
 	cpu := filepath.Join(dir, "cpu_"+ti+".prof")
-	// mem := filepath.Join("prof", "mem_"+ti+".prof")
 
 	{
-		// cpu profiling
+		// init cpu profiling
 
 		f, err := os.Create(cpu)
 		if err != nil {
@@ -76,19 +75,4 @@ func main() {
 	}
 	fmt.Println("No more password found")
 
-	// mem profiling
-	/*
-		{
-			f, err := os.Create(mem)
-			if err != nil {
-				log.Fatal("could not create memory profile: ", err)
-			}
-			defer f.Close() // error handling omitted for example
-			runtime.GC()    // get up-to-date statistics
-			if err := pprof.Lookup("heap").WriteTo(f, 1); err != nil {
-				log.Fatal("could not write memory profile: ", err)
-
-			}
-		}
-	*/
 }

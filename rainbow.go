@@ -152,8 +152,7 @@ func (r *Rainbow) SortChains() {
 		return bytes.Compare(r.chains[i].end, r.chains[j].end) < 0
 	})
 	r.sorted = true
-	// dedup - TODO - not working efficiently enough yet
-	// r.dedupChains()
+
 }
 
 func (r *Rainbow) String() string {

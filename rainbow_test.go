@@ -107,22 +107,6 @@ func BenchmarkAddChain1_000_000(b *testing.B) {
 	r.benchmarkAddChain(b)
 }
 
-/*
-func BenchmarkLookup2_000x5_000(b *testing.B) {
-	r := getTestRainbow(2_000)  // chain length
-	r.benchmarkLookup(5_000, b) // nb of chains
-}
-func BenchmarkLookup5_000x2_000(b *testing.B) {
-	r := getTestRainbow(5_000)  // chain length
-	r.benchmarkLookup(2_000, b) // nb of chains
-}
-
-func BenchmarkLookup500x20_000(b *testing.B) {
-	r := getTestRainbow(500)     // chain length
-	r.benchmarkLookup(20_000, b) // nb of chains
-}
-*/
-
 func BenchmarkLookup500x2_000(b *testing.B) {
 	r := getTestRainbow(500)    // chain length
 	r.benchmarkLookup(2_000, b) // nb of chains

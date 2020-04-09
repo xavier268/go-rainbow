@@ -36,12 +36,6 @@ func (r *Rainbow) buildReduce() ReduceFunction {
 		r.signature = m.signature + "\n"
 	}
 
-	/* // AUTO EXTEND hash data
-	if r.used >= r.hsize {
-		panic("too many entropy required versus available hash size")
-	}
-	*/
-
 	r.built = true
 
 	return func(step int, h, p []byte) []byte {
@@ -228,31 +222,3 @@ func (r *Rainbow) CompileWordList(fName string) *Rainbow {
 
 	return r
 }
-
-/* DEPRECATED
-// extract from a big int a value from 0 to (n-1),
-// returning the new big.Int and the extracted value.
-// v is a big.Int passed to hold v, and avoid allocation.
-// It will be overwritten.
-// No control is made that the big.Int is big enough
-// and that the extraction is significant.
-func extract(b *big.Int, n *big.Int, v *big.Int) (bb *big.Int, vv int) {
-	b, v = b.DivMod(b, n, v)
-	return b, int(v.Int64())
-}
-
-// largeConstantAsBig is a large number constant used to generate a float with extractf
-var largeConstantAsBig = new(big.Int).SetInt64(largeConstant)
-var largePrimeAsBig = new(big.Int).SetInt64(largePrime)
-
-const largeConstant = 1_000_000_000
-const largePrime = 2_147_483_647
-
-// return a float uniformely distributed between 0 and 1
-func extractf(b *big.Int, buf *big.Int) float64 {
-	buf = buf.Mul(b, largePrimeAsBig)
-	buf = buf.Mod(buf, largeConstantAsBig)
-	return float64(buf.Int64()) / float64(largeConstant)
-}
-
-*/
