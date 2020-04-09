@@ -47,11 +47,11 @@ The above example would generate the following passwords :
 ````
 
 Also notice that when you are finished piping the various *CompileXXX* instructions, you need to call *Build()* to finalize the reduce function.
-*Build()* can only be called once, and should be called before strating constructing the chains.
+*Build()* can only be called once, and should be called before starting constructing the chains.
 
-*CompileTransform* provides also a way to apply a transformation to the pasword as it is at this stage, specify a probability. 0.0 means thetransformation is never applied, 1.0 it is always applied.
+*CompileTransform* provides also a way to apply a transformation to the pasword as it is at this stage, selecting a transformation within a list.
 
-For instance, the following table would include words from the file, 1/3 of them been capitalized.
+For instance, the table below would include words from the file, 1/3 of them been capitalized. You specify a list of potential transformation, some of them can be nil (no change), and each transformation will be chosen with the same probability.
 ````golang
 // Specify the transformation to be applied
 func trf (p []byte) ([]byte) {
@@ -59,11 +59,9 @@ func trf (p []byte) ([]byte) {
     }
     
 // Compile it
-r.CompileTransform(trf, 0.333)
+r.CompileTransform(trf, nil, nil)
 ````
-This is a very powerful and flexible approach - for instance, you can try duplicating passwords, replacinf 'a' with '@' or any other transformation, 
-with a specific probability, based upon your assupltion of what users are 
-more suceptible of trying ...
+This is a very powerful and flexible approach - for instance, you can try duplicating passwords, replacing 'a' with '@' or any other transformation, based upon your assumption of what passwords are likely to look like ...
 
 #### 3. Compute the chains.
 
