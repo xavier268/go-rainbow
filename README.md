@@ -3,6 +3,8 @@
 
 Rainbow tables for specific customized name spaces
 
+[![GoDoc](https://godoc.org/github.com/xavier268/go-rainbow?status.svg)](https://godoc.org/github.com/xavier268/go-rainbow)
+
 ## Legal warning
 
 #### This package should not be used to crack passwords on machines or systems that you don't own or which you are not legally entitled to test.
